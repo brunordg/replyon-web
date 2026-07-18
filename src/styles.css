@@ -1,0 +1,120 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-ry-blue-900: var(--ry-blue-900);
+  --color-ry-blue-700: var(--ry-blue-700);
+  --color-ry-blue-600: var(--ry-blue-600);
+  --color-ry-blue-500: var(--ry-blue-500);
+  --color-ry-blue-100: var(--ry-blue-100);
+  --color-ry-blue-50: var(--ry-blue-50);
+  --color-ry-accent: var(--ry-accent);
+  --color-ry-ink: var(--ry-ink);
+  --color-ry-ink-soft: var(--ry-ink-soft);
+  --color-ry-line: var(--ry-line);
+  --color-ry-bg: var(--ry-bg);
+
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-done: var(--done);
+  --color-done-bg: var(--done-bg);
+
+  --font-logo: "Comfortaa", cursive;
+  --font-display: "Oswald", sans-serif;
+  --font-body: "Poppins", sans-serif;
+}
+
+:root {
+  --radius: 0.75rem;
+
+  --ry-blue-900: #16277E;
+  --ry-blue-700: #1E3AB8;
+  --ry-blue-600: #2748D9;
+  --ry-blue-500: #3B5BF0;
+  --ry-blue-100: #E4E9FD;
+  --ry-blue-50: #F1F4FE;
+  --ry-bg: #F4F6FB;
+  --ry-ink: #1D2433;
+  --ry-ink-soft: #5A6478;
+  --ry-line: #E4E8F1;
+  --ry-accent: #F26B26;
+
+  --ok: #18A05E;  --ok-bg: #E4F7ED;
+  --warn: #D98A0B; --warn-bg: #FCF3DF;
+  --info: #2748D9; --info-bg: #E7ECFD;
+  --danger: #D8442E; --danger-bg: #FBE9E5;
+  --done: #6B46C1; --done-bg: #F0EAFB;
+
+  --background: #F4F6FB;
+  --foreground: #1D2433;
+  --card: #FFFFFF;
+  --card-foreground: #1D2433;
+  --popover: #FFFFFF;
+  --popover-foreground: #1D2433;
+  --primary: #2748D9;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F4FE;
+  --secondary-foreground: #16277E;
+  --muted: #F1F4FE;
+  --muted-foreground: #5A6478;
+  --accent: #F1F4FE;
+  --accent-foreground: #16277E;
+  --destructive: #D8442E;
+  --destructive-foreground: #FFFFFF;
+  --border: #E4E8F1;
+  --input: #E4E8F1;
+  --ring: #3B5BF0;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-size: 13px;
+  }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.5px;
+  }
+}
+
+@utility font-logo { font-family: var(--font-logo); }
+@utility font-display { font-family: var(--font-display); }
+@utility font-body { font-family: var(--font-body); }
