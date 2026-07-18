@@ -3,7 +3,10 @@
     "allow": [
       "Bash(timeout 300 npx vite build)",
       "Bash(cd /home/bruno/Environment/workspace-replyon/replyon-api && rtk ls && find . -iname \"*Schedule*\" -name \"*.java\" | head -40)",
-      "Read(//home/bruno/Environment/workspace-replyon/replyon-api/**)"
+      "Read(//home/bruno/Environment/workspace-replyon/replyon-api/**)",
+      "Bash(python3 -)",
+      "Bash(npx prettier *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

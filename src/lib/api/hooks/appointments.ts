@@ -1,9 +1,4 @@
-import {
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { appointmentsApi, type AppointmentListParams } from "../appointments";
 import { ApiError } from "../client";
@@ -15,10 +10,7 @@ function errMessage(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
 }
 
-export function useAppointmentsByCustomer(
-  params: AppointmentListParams,
-  enabled = true,
-) {
+export function useAppointmentsByCustomer(params: AppointmentListParams, enabled = true) {
   return useQuery({
     queryKey: [KEY, "customer", params],
     queryFn: ({ signal }) => appointmentsApi.listByCustomer(params, signal),
@@ -55,9 +47,7 @@ export function useAllAppointmentsByStaff(staffIds: number[], size = 200) {
     })),
   });
 
-  const appointments: AppointmentResponse[] = results.flatMap(
-    (r) => r.data?.appointments ?? [],
-  );
+  const appointments: AppointmentResponse[] = results.flatMap((r) => r.data?.appointments ?? []);
 
   return {
     appointments,
@@ -80,11 +70,28 @@ export function useCreateAppointment() {
   });
 }
 
-export type AppointmentAction =
-  | "confirm"
-  | "cancel"
-  | "complete"
-  | "no-show";
+/**
+ * Creates an appointment and, when the user picked "Confirmado" as the initial
+ * status, confirms it in a second call — CreateAppointmentRequest carries no
+ * status field, so the backend always starts an appointment as PENDING.
+ */
+export function useCreateAppointmentWithStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ body, confirm }: { body: CreateAppointmentRequest; confirm: boolean }) => {
+      const created = await appointmentsApi.create(body);
+      return confirm ? appointmentsApi.confirm(created.id) : created;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY] });
+      qc.invalidateQueries({ queryKey: ["availability"] });
+      toast.success("Agendamento criado");
+    },
+    onError: (err) => toast.error(errMessage(err, "Não foi possível criar o agendamento")),
+  });
+}
+
+export type AppointmentAction = "confirm" | "cancel" | "complete" | "no-show";
 
 const ACTION_LABEL: Record<AppointmentAction, string> = {
   confirm: "confirmado",

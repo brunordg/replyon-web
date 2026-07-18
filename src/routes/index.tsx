@@ -2,15 +2,38 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarPlus, Download, TrendingUp, Users, DollarSign, CalendarCheck } from "lucide-react";
+import {
+  CalendarPlus,
+  Download,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  DollarSign,
+  CalendarCheck,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useStaffList } from "@/lib/api/hooks/staff";
-import { useCustomers } from "@/lib/api/hooks/customers";
 import { useServices } from "@/lib/api/hooks/services";
 import { useAllAppointmentsByStaff } from "@/lib/api/hooks/appointments";
 import { APPOINTMENT_STATUS_LABEL, APPOINTMENT_STATUS_STYLE } from "@/lib/api/status";
 import { formatBRL } from "@/lib/utils";
+import { useDashboardMetrics } from "@/lib/api/hooks/dashboard";
+import {
+  directionOf,
+  formatPercentDelta,
+  formatPointsDelta,
+  type TrendDirection,
+} from "@/lib/dashboard-metrics";
+
+interface Kpi {
+  label: string;
+  value: string;
+  icon: typeof Users;
+  delta: string;
+  direction: TrendDirection;
+  caption: string;
+}
 
 export const Route = createFileRoute("/")({
   component: DashboardPage,
@@ -25,11 +48,12 @@ function todayKey(): string {
 
 function DashboardPage() {
   const staffQuery = useStaffList({ size: 200 });
-  const customersQuery = useCustomers({ size: 1 });
   const servicesQuery = useServices({ size: 200 });
-  const staff = staffQuery.data?.content ?? [];
+  const staff = useMemo(() => staffQuery.data?.content ?? [], [staffQuery.data]);
   const staffIds = useMemo(() => staff.map((s) => s.id), [staff]);
   const { appointments } = useAllAppointmentsByStaff(staffIds);
+  const metricsQuery = useDashboardMetrics();
+  const metrics = metricsQuery.data;
 
   const serviceMap = useMemo(
     () => new Map((servicesQuery.data?.content ?? []).map((s) => [s.id, s])),
@@ -43,14 +67,6 @@ function DashboardPage() {
     [appointments, today],
   );
 
-  const revenueToday = useMemo(
-    () =>
-      todays
-        .filter((a) => a.status !== "CANCELLED" && a.status !== "NO_SHOW")
-        .reduce((sum, a) => sum + (serviceMap.get(a.serviceId)?.price ?? 0), 0),
-    [todays, serviceMap],
-  );
-
   const statusCounts = useMemo(() => {
     const counts = { CONFIRMED: 0, PENDING: 0, COMPLETED: 0, NO_SHOW: 0 };
     for (const a of appointments) {
@@ -59,15 +75,45 @@ function DashboardPage() {
     return counts;
   }, [appointments]);
 
-  const kpis = [
-    { label: "Agendamentos hoje", value: String(todays.length), icon: CalendarCheck },
+  // Presentation only — every number and comparison below comes from the API.
+  const kpis: Kpi[] = [
     {
-      label: "Clientes cadastrados",
-      value: String(customersQuery.data?.totalElements ?? "—"),
-      icon: Users,
+      label: "Agendamentos hoje",
+      value: metrics ? String(metrics.appointmentsToday.value) : "—",
+      icon: CalendarCheck,
+      delta: formatPercentDelta(metrics?.appointmentsToday.changePercent),
+      direction: directionOf(metrics?.appointmentsToday.changePercent),
+      caption: "vs. mesmo dia da semana passada",
     },
-    { label: "Faturamento previsto (hoje)", value: formatBRL(revenueToday), icon: DollarSign },
-    { label: "Profissionais ativos", value: String(staff.length), icon: TrendingUp },
+    {
+      label: "Novos clientes (mês)",
+      value: metrics ? String(metrics.newCustomers.month) : "—",
+      icon: Users,
+      delta: metrics
+        ? metrics.newCustomers.week > 0
+          ? `+${metrics.newCustomers.week} ${metrics.newCustomers.week === 1 ? "novo" : "novos"}`
+          : "0 novos"
+        : "—",
+      direction: (metrics?.newCustomers.week ?? 0) > 0 ? "up" : "flat",
+      caption: "essa semana",
+    },
+    {
+      label: "Faturamento previsto (mês)",
+      value: metrics ? formatBRL(metrics.expectedRevenue.month) : "—",
+      icon: DollarSign,
+      delta: formatPercentDelta(metrics?.expectedRevenue.changePercent),
+      direction: directionOf(metrics?.expectedRevenue.changePercent),
+      caption: "vs. mês passado",
+    },
+    {
+      label: "Taxa de ocupação (semana)",
+      value: metrics?.occupancy.rate == null ? "—" : `${Math.round(metrics.occupancy.rate)}%`,
+      icon: TrendingUp,
+      delta: formatPointsDelta(metrics?.occupancy.changePoints),
+      direction: directionOf(metrics?.occupancy.changePoints),
+      caption:
+        metrics && metrics.occupancy.rate == null ? "sem agenda cadastrada" : "vs. semana passada",
+    },
   ];
 
   const upcoming = useMemo(
@@ -100,9 +146,10 @@ function DashboardPage() {
         }
       />
 
-      <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-2 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((k) => {
           const Icon = k.icon;
+          const Arrow = k.direction === "down" ? TrendingDown : TrendingUp;
           return (
             <Card key={k.label} className="rounded-[14px] border-ry-line p-4">
               <div className="flex items-start justify-between">
@@ -114,10 +161,29 @@ function DashboardPage() {
                   <Icon className="h-4 w-4" />
                 </div>
               </div>
+              <div className="mt-1 flex items-center gap-1.5 text-[11px]">
+                {k.direction === "flat" ? (
+                  <span className="text-ry-ink-soft">{k.delta}</span>
+                ) : (
+                  <span
+                    className={`inline-flex items-center gap-1 font-medium ${
+                      k.direction === "up" ? "text-ok" : "text-danger"
+                    }`}
+                  >
+                    <Arrow className="h-3 w-3" />
+                    {k.delta}
+                  </span>
+                )}
+                <span className="text-ry-ink-soft">{k.caption}</span>
+              </div>
             </Card>
           );
         })}
       </div>
+
+      {metricsQuery.isError && (
+        <p className="mb-5 text-[11px] text-danger">Não foi possível carregar as métricas.</p>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2 rounded-[14px] border-ry-line p-0 overflow-hidden">

@@ -342,3 +342,39 @@ export interface DailyAgendaResponse {
   date: string;
   slots: AgendaSlot[];
 }
+
+// ---- Dashboard ----
+// Every metric carries its own previous-period comparison, computed server-side.
+// `null` on a change field means there was no baseline (previous period was
+// zero) — growth from nothing is undefined, not 100%.
+
+export interface DashboardCountMetric {
+  value: number;
+  previous: number;
+  changePercent: number | null;
+}
+
+export interface DashboardNewCustomersMetric {
+  month: number;
+  week: number;
+}
+
+export interface DashboardRevenueMetric {
+  month: number;
+  previousMonth: number;
+  changePercent: number | null;
+}
+
+/** Rates compare in percentage points, never in percent. */
+export interface DashboardOccupancyMetric {
+  rate: number | null;
+  previousRate: number | null;
+  changePoints: number | null;
+}
+
+export interface DashboardMetricsResponse {
+  appointmentsToday: DashboardCountMetric;
+  newCustomers: DashboardNewCustomersMetric;
+  expectedRevenue: DashboardRevenueMetric;
+  occupancy: DashboardOccupancyMetric;
+}

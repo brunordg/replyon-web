@@ -1,8 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { staffApi } from "../staff";
 import { ApiError } from "../client";
-import type { CreateStaffRequest, ListParams, UpdateStaffRequest } from "../types";
+import type {
+  CreateStaffRequest,
+  ListParams,
+  StaffServiceResponse,
+  UpdateStaffRequest,
+} from "../types";
 
 const KEY = "staff";
 const SERVICES_KEY = "staff-services";
@@ -81,6 +87,48 @@ export function useStaffServices(staffId: number | undefined, enabled = true) {
     enabled: enabled && staffId != null,
     select: (res) => res.serviceIds,
   });
+}
+
+/**
+ * Assigned service ids for every given staff member, as a Map.
+ *
+ * The backend only answers "which services does staff X do?" one staff at a
+ * time (GET /staff/{id}/services), so we fan out — same shape as
+ * `useAllAppointmentsByStaff`. Staff lists are small and the responses are just
+ * id arrays, and react-query dedupes these with the per-staff `useStaffServices`
+ * calls since both share the `[SERVICES_KEY, id]` key.
+ */
+export function useStaffServicesMap(staffIds: number[], enabled = true) {
+  const results = useQueries({
+    queries: staffIds.map((id) => ({
+      queryKey: [SERVICES_KEY, id],
+      queryFn: () => staffApi.listServices(id),
+      enabled,
+      select: (res: StaffServiceResponse) => res.serviceIds,
+    })),
+  });
+
+  // Don't block on the slowest member: loading means nothing has arrived,
+  // error means everything failed. A partial failure degrades to that staff
+  // simply not being offered.
+  const hasAny = results.some((r) => r.data);
+  const isLoading = !hasAny && results.some((r) => r.isLoading);
+  const isError = results.length > 0 && results.every((r) => r.isError);
+
+  // `useQueries` hands back a fresh array each render, so the Map has to be
+  // memoized on the *contents* — otherwise every consumer's useMemo/useEffect
+  // that depends on it re-runs on every render.
+  const signature = JSON.stringify(staffIds.map((id, i) => [id, results[i]?.data ?? null]));
+
+  const byStaffId = useMemo(() => {
+    const map = new Map<number, number[]>();
+    for (const [id, ids] of JSON.parse(signature) as [number, number[] | null][]) {
+      if (ids) map.set(id, ids);
+    }
+    return map;
+  }, [signature]);
+
+  return { byStaffId, isLoading, isError };
 }
 
 /**

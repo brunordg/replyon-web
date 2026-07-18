@@ -2,15 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarPlus, Download, Check, CheckCheck, X } from "lucide-react";
+import { Download, Check, CheckCheck, UserX, X } from "lucide-react";
+import { NovoAgendamentoDialog } from "@/components/novo-agendamento-dialog";
 import { useMemo, useState } from "react";
 import { useStaffList } from "@/lib/api/hooks/staff";
 import { useCustomers } from "@/lib/api/hooks/customers";
 import { useServices } from "@/lib/api/hooks/services";
-import {
-  useAllAppointmentsByStaff,
-  useAppointmentAction,
-} from "@/lib/api/hooks/appointments";
+import { useAllAppointmentsByStaff, useAppointmentAction } from "@/lib/api/hooks/appointments";
 import { APPOINTMENT_STATUS_LABEL, APPOINTMENT_STATUS_STYLE } from "@/lib/api/status";
 import { colorFromString, formatBRL, formatDateTime, initials } from "@/lib/utils";
 import { EmptyState, ErrorState, LoadingState } from "@/components/query-state";
@@ -21,7 +19,10 @@ export const Route = createFileRoute("/agendamentos")({
   head: () => ({
     meta: [
       { title: "Agendamentos — Replyon" },
-      { name: "description", content: "Gerencie, confirme e reagende os atendimentos da sua empresa." },
+      {
+        name: "description",
+        content: "Gerencie, confirme e reagende os atendimentos da sua empresa.",
+      },
     ],
   }),
 });
@@ -89,9 +90,7 @@ function AgendamentosPage() {
             <Button className="rounded-[10px] gap-2 bg-ry-accent hover:brightness-110 text-white shadow-[0_6px_16px_rgba(242,107,38,.28)]">
               <Download className="h-3.5 w-3.5" /> Exportar Excel
             </Button>
-            <Button className="rounded-[10px] gap-2 bg-ry-blue-600 hover:bg-ry-blue-700 shadow-[0_6px_16px_rgba(39,72,217,.28)]">
-              <CalendarPlus className="h-3.5 w-3.5" /> Novo agendamento
-            </Button>
+            <NovoAgendamentoDialog />
           </>
         }
       />
@@ -130,16 +129,23 @@ function AgendamentosPage() {
               <table className="w-full min-w-[820px] border-collapse">
                 <thead>
                   <tr>
-                    {["Código", "Cliente", "Serviço", "Profissional", "Data e hora", "Valor", "Status", "Ações"].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="border-b border-ry-line bg-ry-blue-50 px-4 py-3 text-left font-display text-[10.5px] font-medium uppercase tracking-[1.5px] text-ry-ink-soft whitespace-nowrap"
-                        >
-                          {h}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      "Código",
+                      "Cliente",
+                      "Serviço",
+                      "Profissional",
+                      "Data e hora",
+                      "Valor",
+                      "Status",
+                      "Ações",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="border-b border-ry-line bg-ry-blue-50 px-4 py-3 text-left font-display text-[10.5px] font-medium uppercase tracking-[1.5px] text-ry-ink-soft whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -163,7 +169,9 @@ function AgendamentosPage() {
                             </div>
                             <div>
                               <b className="block text-[12px] font-medium">{customerName}</b>
-                              <span className="text-[10.5px] text-ry-ink-soft">{customer?.email ?? "—"}</span>
+                              <span className="text-[10.5px] text-ry-ink-soft">
+                                {customer?.email ?? "—"}
+                              </span>
                             </div>
                           </div>
                         </td>
@@ -200,6 +208,17 @@ function AgendamentosPage() {
                               icon={CheckCheck}
                               disabled={action.isPending || a.status !== "CONFIRMED"}
                               onClick={() => action.mutate({ id: a.id, action: "complete" })}
+                            />
+                            {/* Backend allows no-show from PENDING or CONFIRMED
+                                (Appointment.markNoShow) — same rule as complete. */}
+                            <ActionButton
+                              title="Marcar falta"
+                              icon={UserX}
+                              disabled={
+                                action.isPending ||
+                                (a.status !== "PENDING" && a.status !== "CONFIRMED")
+                              }
+                              onClick={() => action.mutate({ id: a.id, action: "no-show" })}
                             />
                             <ActionButton
                               title="Cancelar"
