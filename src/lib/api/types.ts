@@ -5,12 +5,7 @@
 
 export type EntityStatus = "ACTIVE" | "INACTIVE";
 
-export type AppointmentStatus =
-  | "PENDING"
-  | "CONFIRMED"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "NO_SHOW";
+export type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
 /** Standard list wrapper used by customers/services/staff/companies (key: `content`). */
 export interface Page<T> {
@@ -233,6 +228,93 @@ export interface TimeBlockResponse {
 
 export interface TimeBlockPage {
   timeBlocks: TimeBlockResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+// ---- Schedules (per staff) ----
+// A schedule is a flat list of working windows; a day carries as many windows
+// as needed (e.g. 09:00–12:00 + 13:00–18:00 around lunch) and days with no
+// window are simply absent. LocalTime serializes as "HH:mm:ss". The backend
+// enforces one schedule per (staffId, tenantId) via a unique constraint, so the
+// list endpoint returns either zero or one item.
+
+/** UI-side weekday keys, in display order. */
+export const SCHEDULE_DAYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
+
+export type ScheduleDay = (typeof SCHEDULE_DAYS)[number];
+
+/** java.time.DayOfWeek, serialized as the enum name. */
+export type ApiDayOfWeek =
+  "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+
+/** `SCHEDULE_DAYS` is ordered Monday-first to match `DayOfWeek`'s 1..7. */
+export const API_DAY_OF_WEEK: Record<ScheduleDay, ApiDayOfWeek> = {
+  monday: "MONDAY",
+  tuesday: "TUESDAY",
+  wednesday: "WEDNESDAY",
+  thursday: "THURSDAY",
+  friday: "FRIDAY",
+  saturday: "SATURDAY",
+  sunday: "SUNDAY",
+};
+
+export const SCHEDULE_DAY_BY_API: Record<ApiDayOfWeek, ScheduleDay> = {
+  MONDAY: "monday",
+  TUESDAY: "tuesday",
+  WEDNESDAY: "wednesday",
+  THURSDAY: "thursday",
+  FRIDAY: "friday",
+  SATURDAY: "saturday",
+  SUNDAY: "sunday",
+};
+
+/** One continuous working window. Times are "HH:mm:ss" on the wire. */
+export interface ScheduleWindowRequest {
+  dayOfWeek: ApiDayOfWeek;
+  startTime: string;
+  endTime: string;
+}
+
+export type ScheduleWindowResponse = ScheduleWindowRequest;
+
+export interface ScheduleResponse {
+  id: number;
+  staffId: number;
+  /** Returned sorted by day then start time, with overlaps already rejected. */
+  windows: ScheduleWindowResponse[];
+  intervalBetweenAppointments: number;
+  /** Server-computed sum of every window's duration. */
+  weeklyMinutes: number;
+  status: EntityStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateScheduleRequest {
+  staffId: number;
+  windows: ScheduleWindowRequest[];
+  intervalBetweenAppointments: number;
+}
+
+export interface UpdateScheduleRequest {
+  windows: ScheduleWindowRequest[];
+  intervalBetweenAppointments: number;
+}
+
+/** List wrapper for schedules (key: `schedules`, not `content`). */
+export interface SchedulePage {
+  schedules: ScheduleResponse[];
   page: number;
   size: number;
   totalElements: number;
