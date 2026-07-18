@@ -21,7 +21,7 @@ export const Route = createFileRoute("/profissionais")({
 });
 
 function ProfissionaisPage() {
-  const { data, isLoading, isError, error, refetch } = useStaffList();
+  const { data, isLoading, isError, error, refetch } = useStaffList({ size: 200 });
   const staff = data?.content ?? [];
 
   return (

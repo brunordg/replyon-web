@@ -226,6 +226,20 @@ export interface TimeBlockResponse {
   updatedAt: string;
 }
 
+/** `staffId` also travels in the path; the backend validates both. */
+export interface CreateTimeBlockRequest {
+  staffId: number;
+  type: string;
+  startDateTime: string;
+  endDateTime: string;
+  reason?: string;
+  isRecurring?: boolean;
+  recurrencePattern?: string;
+}
+
+/** Every field is optional — the backend only applies what is sent. */
+export type UpdateTimeBlockRequest = Partial<Omit<CreateTimeBlockRequest, "staffId">>;
+
 export interface TimeBlockPage {
   timeBlocks: TimeBlockResponse[];
   page: number;
@@ -256,7 +270,13 @@ export type ScheduleDay = (typeof SCHEDULE_DAYS)[number];
 
 /** java.time.DayOfWeek, serialized as the enum name. */
 export type ApiDayOfWeek =
-  "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY"
+  | "SUNDAY";
 
 /** `SCHEDULE_DAYS` is ordered Monday-first to match `DayOfWeek`'s 1..7. */
 export const API_DAY_OF_WEEK: Record<ScheduleDay, ApiDayOfWeek> = {
@@ -377,4 +397,6 @@ export interface DashboardMetricsResponse {
   newCustomers: DashboardNewCustomersMetric;
   expectedRevenue: DashboardRevenueMetric;
   occupancy: DashboardOccupancyMetric;
+  /** The one metric that counts what did NOT happen. */
+  noShowsMonth: DashboardCountMetric;
 }
