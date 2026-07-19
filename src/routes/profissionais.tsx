@@ -7,10 +7,16 @@ import { EditarProfissionalDialog } from "@/components/editar-profissional-dialo
 import { useStaffList } from "@/lib/api/hooks/staff";
 import { colorFromString, initials } from "@/lib/utils";
 import { EmptyState, ErrorState, LoadingState } from "@/components/query-state";
-import { Clock, Star } from "lucide-react";
+import { Clock, Search, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import type { StaffResponse } from "@/lib/api/types";
 
 export const Route = createFileRoute("/profissionais")({
+  validateSearch: (search: Record<string, unknown>): { q?: string } => {
+    const q = typeof search.q === "string" ? search.q.trim() : "";
+    return q ? { q } : {};
+  },
   component: ProfissionaisPage,
   head: () => ({
     meta: [
@@ -21,7 +27,15 @@ export const Route = createFileRoute("/profissionais")({
 });
 
 function ProfissionaisPage() {
-  const { data, isLoading, isError, error, refetch } = useStaffList({ size: 200 });
+  const { q } = Route.useSearch();
+  const [search, setSearch] = useState(q ?? "");
+
+  useEffect(() => {
+    setSearch(q ?? "");
+  }, [q]);
+
+  const name = useDebouncedValue(search).trim() || undefined;
+  const { data, isLoading, isError, error, refetch } = useStaffList({ size: 200, name });
   const staff = data?.content ?? [];
 
   return (
@@ -33,6 +47,18 @@ function ProfissionaisPage() {
         actions={<NovoProfissionalDialog />}
       />
 
+      <div className="mb-4 flex">
+        <div className="ml-auto flex items-center gap-2.5 rounded-[10px] border border-ry-line bg-white px-3 py-1.5 min-w-[260px]">
+          <Search className="h-3.5 w-3.5 text-ry-ink-soft" />
+          <input
+            className="flex-1 border-0 bg-transparent text-[12px] outline-none"
+            placeholder="Buscar por nome…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
       {isLoading ? (
         <Card className="rounded-[14px] border-ry-line p-0">
           <LoadingState />
@@ -43,7 +69,9 @@ function ProfissionaisPage() {
         </Card>
       ) : staff.length === 0 ? (
         <Card className="rounded-[14px] border-ry-line p-0">
-          <EmptyState label="Nenhum profissional cadastrado." />
+          <EmptyState
+            label={name ? "Nenhum profissional encontrado." : "Nenhum profissional cadastrado."}
+          />
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

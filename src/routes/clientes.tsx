@@ -9,9 +9,15 @@ import { useCustomers, useSetCustomerStatus } from "@/lib/api/hooks/customers";
 import { ENTITY_STATUS_LABEL, ENTITY_STATUS_STYLE } from "@/lib/api/status";
 import { colorFromString, initials } from "@/lib/utils";
 import { EmptyState, ErrorState, LoadingState } from "@/components/query-state";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import type { CustomerResponse } from "@/lib/api/types";
 
 export const Route = createFileRoute("/clientes")({
+  validateSearch: (search: Record<string, unknown>): { q?: string } => {
+    const q = typeof search.q === "string" ? search.q.trim() : "";
+    // Returning {} rather than { q: undefined } keeps "?q=" out of the URL.
+    return q ? { q } : {};
+  },
   component: ClientesPage,
   head: () => ({
     meta: [
@@ -22,14 +28,16 @@ export const Route = createFileRoute("/clientes")({
 });
 
 function ClientesPage() {
-  const [search, setSearch] = useState("");
-  const [name, setName] = useState<string | undefined>(undefined);
+  const { q } = Route.useSearch();
+  const [search, setSearch] = useState(q ?? "");
 
-  // Debounce the search term into the query param.
+  // Searching again from the top bar while already on this page updates the
+  // search param without remounting, so the input has to follow it.
   useEffect(() => {
-    const t = setTimeout(() => setName(search.trim() || undefined), 350);
-    return () => clearTimeout(t);
-  }, [search]);
+    setSearch(q ?? "");
+  }, [q]);
+
+  const name = useDebouncedValue(search).trim() || undefined;
 
   const { data, isLoading, isError, error, refetch } = useCustomers({ name });
   const customers = data?.content ?? [];
@@ -70,14 +78,16 @@ function ClientesPage() {
             <table className="w-full min-w-[820px] border-collapse">
               <thead>
                 <tr>
-                  {["Cliente", "Telefone", "Visitas", "Última visita", "Segmento", "Ações"].map((h) => (
-                    <th
-                      key={h}
-                      className="border-b border-ry-line bg-ry-blue-50 px-4 py-3 text-left font-display text-[10.5px] font-medium uppercase tracking-[1.5px] text-ry-ink-soft whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  {["Cliente", "Telefone", "Visitas", "Última visita", "Segmento", "Ações"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="border-b border-ry-line bg-ry-blue-50 px-4 py-3 text-left font-display text-[10.5px] font-medium uppercase tracking-[1.5px] text-ry-ink-soft whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -104,10 +114,16 @@ function ClientesPage() {
                         <Phone className="h-3 w-3 text-ry-ink-soft" /> {c.phone || "—"}
                       </span>
                     </td>
-                    <td className="border-b border-ry-line px-4 py-3 text-[12px] font-medium whitespace-nowrap">—</td>
-                    <td className="border-b border-ry-line px-4 py-3 text-[12px] whitespace-nowrap">—</td>
+                    <td className="border-b border-ry-line px-4 py-3 text-[12px] font-medium whitespace-nowrap">
+                      —
+                    </td>
+                    <td className="border-b border-ry-line px-4 py-3 text-[12px] whitespace-nowrap">
+                      —
+                    </td>
                     <td className="border-b border-ry-line px-4 py-3 whitespace-nowrap">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10.5px] font-medium ${ENTITY_STATUS_STYLE[c.status]}`}>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10.5px] font-medium ${ENTITY_STATUS_STYLE[c.status]}`}
+                      >
                         {ENTITY_STATUS_LABEL[c.status]}
                       </span>
                     </td>

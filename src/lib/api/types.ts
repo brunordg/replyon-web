@@ -211,6 +211,21 @@ export interface UpdateAppointmentRequest {
   notes: string;
 }
 
+// ---- Global search ----
+/** `subtitle` is composed by the API: e-mail for people, duração/preço for services. */
+export interface SearchHit {
+  id: number;
+  name: string;
+  subtitle: string | null;
+  status: EntityStatus;
+}
+
+export interface GlobalSearchResponse {
+  customers: SearchHit[];
+  staff: SearchHit[];
+  services: SearchHit[];
+}
+
 // ---- Time Blocks (per staff) ----
 export interface TimeBlockResponse {
   id: number;
