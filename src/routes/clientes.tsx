@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
-import { Search, Phone, Mail, Power, PowerOff, Loader2 } from "lucide-react";
+import { Search, Phone, Mail, Power, PowerOff, Loader2, CalendarPlus } from "lucide-react";
+import { NovoAgendamentoDialog } from "@/components/novo-agendamento-dialog";
 import { NovoClienteDialog } from "@/components/novo-cliente-dialog";
 import { EditarClienteDialog } from "@/components/editar-cliente-dialog";
 import { useCustomers, useSetCustomerStatus } from "@/lib/api/hooks/customers";
@@ -129,6 +130,21 @@ function ClientesPage() {
                     </td>
                     <td className="border-b border-ry-line px-4 py-3 whitespace-nowrap">
                       <div className="flex gap-1.5">
+                        {/* Inactive clients cannot be booked — the dialog only
+                            offers active ones, so the action would dead-end. */}
+                        {c.status === "ACTIVE" && (
+                          <NovoAgendamentoDialog
+                            customer={c}
+                            trigger={
+                              <button
+                                title="Novo agendamento"
+                                className="grid h-7 w-7 place-items-center rounded-lg border border-ry-line bg-white text-ry-ink-soft transition-colors hover:border-ry-blue-500 hover:text-ry-blue-600"
+                              >
+                                <CalendarPlus className="h-3.5 w-3.5" />
+                              </button>
+                            }
+                          />
+                        )}
                         <EditarClienteDialog customer={c} />
                         <ClienteStatusButton customer={c} />
                       </div>
