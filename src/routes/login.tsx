@@ -150,10 +150,10 @@ function LoginPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Button type="button" variant="outline" className="h-11">
+              <Button type="button" variant="outline" className="h-11 hidden">
                 <GoogleIcon /> Google
               </Button>
-              <Button type="button" variant="outline" className="h-11">
+              <Button type="button" variant="outline" className="h-11 hidden">
                 <AppleIcon /> Apple
               </Button>
             </div>

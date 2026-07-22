@@ -35,8 +35,10 @@ export function useUpdateCompany() {
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: UpdateCompanyRequest }) =>
       companiesApi.update(id, body),
-    onSuccess: (_data, { id }) => {
-      qc.invalidateQueries({ queryKey: [KEY, id] });
+    onSuccess: () => {
+      // Invalidate the whole key: the company is cached both by id and under
+      // "mine" (see useMyCompany), and a save must refresh both.
+      qc.invalidateQueries({ queryKey: [KEY] });
       toast.success("Empresa atualizada");
     },
     onError: (err) => toast.error(errMessage(err, "Não foi possível atualizar a empresa")),

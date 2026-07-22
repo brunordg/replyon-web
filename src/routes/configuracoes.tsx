@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,18 +37,27 @@ function ConfigPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
-  useEffect(() => {
-    if (company) {
-      setName(company.name);
-      setEmail(company.email);
-      setPhone(company.phone);
-    }
+  const resetForm = useCallback(() => {
+    if (!company) return;
+    setName(company.name);
+    setEmail(company.email);
+    setPhone(company.phone);
   }, [company]);
+
+  useEffect(() => {
+    resetForm();
+  }, [resetForm]);
 
   const handleSave = () => {
     if (!company) return;
     updateCompany.mutate({ id: company.id, body: { name, email, phone } });
   };
+
+  // Nothing to save while the company is loading, or when the form still
+  // matches what is persisted.
+  const isDirty =
+    company != null &&
+    (name !== company.name || email !== company.email || phone !== company.phone);
 
   return (
     <>
@@ -201,10 +210,17 @@ function ConfigPage() {
           </Card>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" className="rounded-[10px]">Cancelar</Button>
+            <Button
+              variant="outline"
+              onClick={resetForm}
+              disabled={!isDirty || updateCompany.isPending}
+              className="rounded-[10px]"
+            >
+              Cancelar
+            </Button>
             <Button
               onClick={handleSave}
-              disabled={!company || updateCompany.isPending}
+              disabled={!isDirty || updateCompany.isPending}
               className="rounded-[10px] bg-ry-blue-600 hover:bg-ry-blue-700 shadow-[0_6px_16px_rgba(39,72,217,.28)]"
             >
               {updateCompany.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
