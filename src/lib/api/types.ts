@@ -89,6 +89,16 @@ export interface SignUpResponse {
   userEmail: string;
 }
 
+// ---- WhatsApp (WAHA connection) ----
+export type WahaConnectionStatus = "DISCONNECTED" | "CONNECTING" | "CONNECTED" | "FAILED";
+
+export interface WhatsAppConnectionResponse {
+  sessionName: string | null;
+  status: WahaConnectionStatus;
+  qrCodeBase64: string | null;
+  meNumber: string | null;
+}
+
 // ---- Customers ----
 export interface CustomerResponse {
   id: number;

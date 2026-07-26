@@ -2,12 +2,25 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Building2, Bell, Lock, Clock, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { Building2, Bell, Lock, Clock, Loader2, LogOut, MessageCircle } from "lucide-react";
 import { useMyCompany, useUpdateCompany } from "@/lib/api/hooks/companies";
+import { useConnectWhatsApp, useDisconnectWhatsApp, useWhatsAppStatus } from "@/lib/api/hooks/whatsapp";
+import { WHATSAPP_STATUS_LABEL, WHATSAPP_STATUS_STYLE } from "@/lib/api/status";
 
 export const Route = createFileRoute("/configuracoes")({
   component: ConfigPage,
@@ -23,12 +36,16 @@ const SECTIONS = [
   { id: "empresa", label: "Empresa", icon: Building2 },
   { id: "horario", label: "Horário", icon: Clock },
   { id: "notificacoes", label: "Notificações", icon: Bell },
+  { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
   { id: "seguranca", label: "Segurança", icon: Lock },
 ];
 
 function ConfigPage() {
   const { data: company, isLoading } = useMyCompany();
   const updateCompany = useUpdateCompany();
+  const { data: whatsapp } = useWhatsAppStatus(company?.id);
+  const connectWhatsApp = useConnectWhatsApp(company?.id);
+  const disconnectWhatsApp = useDisconnectWhatsApp(company?.id);
 
   // Company form, seeded from the fetched company. `document` is read-only
   // (the backend does not allow updating it); `address` has no backend field.
@@ -206,6 +223,115 @@ function ConfigPage() {
                   </div>
                 );
               })}
+            </div>
+          </Card>
+
+          <Card id="whatsapp" className="rounded-[14px] border-ry-line p-6">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
+                  WhatsApp
+                </span>
+                <p className="text-[11.5px] text-ry-ink-soft">
+                  Conecte o WhatsApp da empresa para enviar confirmações e lembretes automáticos
+                </p>
+              </div>
+              {whatsapp && (
+                <span
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-medium ${WHATSAPP_STATUS_STYLE[whatsapp.status]}`}
+                >
+                  <i className="h-1.5 w-1.5 rounded-full bg-current" />
+                  {WHATSAPP_STATUS_LABEL[whatsapp.status]}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[200px_1fr]">
+              <div className="flex h-[200px] items-center justify-center rounded-[10px] border border-ry-line bg-ry-bg">
+                {whatsapp?.status === "CONNECTING" && whatsapp.qrCodeBase64 ? (
+                  <img
+                    src={`data:image/png;base64,${whatsapp.qrCodeBase64}`}
+                    alt="QR Code para conectar o WhatsApp"
+                    className="h-full w-full rounded-[10px] object-contain p-2"
+                  />
+                ) : whatsapp?.status === "CONNECTED" ? (
+                  <div className="text-center text-[11.5px] text-ok">
+                    <MessageCircle className="mx-auto mb-1 h-8 w-8" />
+                    Conectado
+                  </div>
+                ) : (
+                  <div className="text-center text-[11.5px] text-ry-ink-soft">
+                    <MessageCircle className="mx-auto mb-1 h-8 w-8 opacity-40" />
+                    Nenhuma sessão ativa
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-[10px] border border-ry-line p-4">
+                <span className="text-[10.5px] font-medium uppercase tracking-[1px] text-ry-ink-soft">
+                  Sessão
+                </span>
+                <p className="mb-3 truncate font-mono text-[13px] font-medium">
+                  {whatsapp?.sessionName ?? "Gerada automaticamente a partir do nome da empresa"}
+                </p>
+                <ol className="space-y-2 text-[11.5px] text-ry-ink-soft">
+                  {[
+                    "Abra o WhatsApp no celular da empresa",
+                    "Toque em Aparelhos conectados → Conectar aparelho",
+                    "Aponte a câmera para o QR Code ao lado",
+                  ].map((step, i) => (
+                    <li key={step} className="flex items-start gap-2">
+                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-ry-blue-50 text-[9.5px] font-semibold text-ry-blue-600">
+                        {i + 1}
+                      </span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              {whatsapp?.status === "CONNECTED" ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="rounded-[10px]">
+                      <LogOut className="mr-1 h-4 w-4" />
+                      Desconectar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Desconectar o WhatsApp?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        As confirmações e lembretes automáticos por WhatsApp vão parar de ser enviados
+                        até você reconectar. A sessão fica salva e pode ser reconectada a qualquer
+                        momento, sem precisar gerar uma nova.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => disconnectWhatsApp.mutate()}
+                        disabled={disconnectWhatsApp.isPending}
+                        className={buttonVariants({ variant: "destructive" })}
+                      >
+                        {disconnectWhatsApp.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                        Desconectar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Button
+                  onClick={() => connectWhatsApp.mutate()}
+                  disabled={!company || connectWhatsApp.isPending}
+                  className="rounded-[10px] bg-ry-blue-600 hover:bg-ry-blue-700 shadow-[0_6px_16px_rgba(39,72,217,.28)]"
+                >
+                  {connectWhatsApp.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                  Conectar WhatsApp
+                </Button>
+              )}
             </div>
           </Card>
 
