@@ -2,7 +2,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { toast } from "sonner";
 import { appointmentsApi, type AppointmentListParams } from "../appointments";
 import { ApiError } from "../client";
-import type { AppointmentResponse, CreateAppointmentRequest } from "../types";
+import type { AppointmentResponse, CreateAppointmentRequest, PaymentMethod } from "../types";
 
 const KEY = "appointments";
 
@@ -91,12 +91,11 @@ export function useCreateAppointmentWithStatus() {
   });
 }
 
-export type AppointmentAction = "confirm" | "cancel" | "complete" | "no-show";
+export type AppointmentAction = "confirm" | "cancel" | "no-show";
 
 const ACTION_LABEL: Record<AppointmentAction, string> = {
   confirm: "confirmado",
   cancel: "cancelado",
-  complete: "concluído",
   "no-show": "marcado como falta",
 };
 
@@ -109,8 +108,6 @@ export function useAppointmentAction() {
           return appointmentsApi.confirm(id);
         case "cancel":
           return appointmentsApi.cancel(id);
-        case "complete":
-          return appointmentsApi.complete(id);
         case "no-show":
           return appointmentsApi.noShow(id);
       }
@@ -120,5 +117,23 @@ export function useAppointmentAction() {
       toast.success(`Agendamento ${ACTION_LABEL[action]}`);
     },
     onError: (err) => toast.error(errMessage(err, "Não foi possível atualizar o agendamento")),
+  });
+}
+
+/**
+ * Completing an appointment requires a payment method (captured via a
+ * confirmation dialog), unlike the other quick actions — kept separate from
+ * useAppointmentAction rather than widening its generic shape for one case.
+ */
+export function useCompleteAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, paymentMethod }: { id: number; paymentMethod: PaymentMethod }) =>
+      appointmentsApi.complete(id, { paymentMethod }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY] });
+      toast.success("Agendamento concluído");
+    },
+    onError: (err) => toast.error(errMessage(err, "Não foi possível concluir o agendamento")),
   });
 }

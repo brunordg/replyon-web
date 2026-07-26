@@ -2,13 +2,32 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Download } from "lucide-react";
 import { useMemo } from "react";
+import { Cell, Pie, PieChart } from "recharts";
 import { useStaffList } from "@/lib/api/hooks/staff";
 import { useServices } from "@/lib/api/hooks/services";
 import { useAllAppointmentsByStaff } from "@/lib/api/hooks/appointments";
 import { formatBRL } from "@/lib/utils";
-import type { AppointmentResponse } from "@/lib/api/types";
+import { PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "@/lib/api/status";
+import type { AppointmentResponse, PaymentMethod } from "@/lib/api/types";
+
+// Fixed, semantic palette reused from the app's existing status colors —
+// keeps the new pie chart visually consistent instead of inventing new hues.
+const PAYMENT_METHOD_COLOR: Record<PaymentMethod, string> = {
+  CASH: "#18A05E",
+  PIX: "#2748D9",
+  CREDIT_CARD: "#6B46C1",
+  DEBIT_CARD: "#D98A0B",
+};
+
+const PAYMENT_METHOD_CHART_CONFIG: ChartConfig = {
+  CASH: { label: PAYMENT_METHOD_LABEL.CASH, color: PAYMENT_METHOD_COLOR.CASH },
+  PIX: { label: PAYMENT_METHOD_LABEL.PIX, color: PAYMENT_METHOD_COLOR.PIX },
+  CREDIT_CARD: { label: PAYMENT_METHOD_LABEL.CREDIT_CARD, color: PAYMENT_METHOD_COLOR.CREDIT_CARD },
+  DEBIT_CARD: { label: PAYMENT_METHOD_LABEL.DEBIT_CARD, color: PAYMENT_METHOD_COLOR.DEBIT_CARD },
+};
 
 export const Route = createFileRoute("/relatorios")({
   component: RelatoriosPage,
@@ -22,6 +41,18 @@ export const Route = createFileRoute("/relatorios")({
 
 const isRealized = (a: AppointmentResponse) =>
   a.status !== "CANCELLED" && a.status !== "NO_SHOW";
+
+/** Money actually received — only a completed appointment has a frozen amount charged. */
+const isCompleted = (a: AppointmentResponse) => a.status === "COMPLETED";
+
+/**
+ * "Top serviços" reads as popularity/projection, not cash received: it keeps
+ * the live service price, but a still-PENDING appointment isn't confirmed
+ * business yet, so it's excluded here too (same principle as the Home's
+ * revenue projection).
+ */
+const countsForTopServices = (a: AppointmentResponse) =>
+  a.status === "CONFIRMED" || a.status === "COMPLETED";
 
 function RelatoriosPage() {
   const staffQuery = useStaffList({ size: 200 });
@@ -50,20 +81,22 @@ function RelatoriosPage() {
     }
     const byKey = new Map(buckets.map((b) => [b.key, b]));
     for (const a of appointments) {
-      if (!isRealized(a)) continue;
+      // Real money received, frozen at completion time — not the live service price.
+      if (!isCompleted(a)) continue;
       const bucket = byKey.get(a.appointmentDateTime.slice(0, 7));
-      if (bucket) bucket.v += priceOf(a.serviceId);
+      if (bucket) bucket.v += a.amountCharged ?? 0;
     }
     return buckets;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appointments, serviceMap]);
+  }, [appointments]);
   const maxMonth = Math.max(1, ...months.map((x) => x.v));
 
-  // Top services by realized appointment count.
+  // Top services by confirmed/completed appointment count (live price — this
+  // reads as popularity, not cash received).
   const top = useMemo(() => {
     const agg = new Map<number, { count: number; revenue: number }>();
     for (const a of appointments) {
-      if (!isRealized(a)) continue;
+      if (!countsForTopServices(a)) continue;
       const cur = agg.get(a.serviceId) ?? { count: 0, revenue: 0 };
       cur.count++;
       cur.revenue += priceOf(a.serviceId);
@@ -76,15 +109,35 @@ function RelatoriosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments, serviceMap]);
 
+  // Current-month revenue by payment method — same COMPLETED + amountCharged
+  // basis as the monthly chart, just grouped differently.
+  const byPaymentMethod = useMemo(() => {
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const totals = new Map<PaymentMethod, number>();
+    for (const a of appointments) {
+      if (!isCompleted(a) || a.appointmentDateTime.slice(0, 7) !== monthKey || !a.paymentMethod) continue;
+      totals.set(a.paymentMethod, (totals.get(a.paymentMethod) ?? 0) + (a.amountCharged ?? 0));
+    }
+    return PAYMENT_METHODS.map((method) => ({
+      method,
+      name: PAYMENT_METHOD_LABEL[method],
+      value: totals.get(method) ?? 0,
+      fill: PAYMENT_METHOD_COLOR[method],
+    })).filter((row) => row.value > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointments]);
+
   // Current-month KPIs.
   const kpis = useMemo(() => {
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const monthAppts = appointments.filter((a) => a.appointmentDateTime.slice(0, 7) === monthKey);
     const realized = monthAppts.filter(isRealized);
-    const revenue = realized.reduce((s, a) => s + priceOf(a.serviceId), 0);
+    const completed = monthAppts.filter(isCompleted);
+    const revenue = completed.reduce((s, a) => s + (a.amountCharged ?? 0), 0);
     const cancelled = monthAppts.filter((a) => a.status === "CANCELLED").length;
-    const ticket = realized.length ? revenue / realized.length : 0;
+    const ticket = completed.length ? revenue / completed.length : 0;
     const cancelRate = monthAppts.length ? (cancelled / monthAppts.length) * 100 : 0;
     return [
       { l: "Faturamento (mês)", v: formatBRL(revenue) },
@@ -93,7 +146,7 @@ function RelatoriosPage() {
       { l: "Cancelamentos", v: `${cancelRate.toFixed(1)}%` },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appointments, serviceMap]);
+  }, [appointments]);
 
   return (
     <>
@@ -160,6 +213,60 @@ function RelatoriosPage() {
           )}
         </Card>
       </div>
+
+      <Card className="mt-4 rounded-[14px] border-ry-line p-5">
+        <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
+          Faturamento por forma de pagamento
+        </span>
+        {byPaymentMethod.length === 0 ? (
+          <p className="mt-4 text-[12px] text-ry-ink-soft">Sem pagamentos registrados neste mês.</p>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
+            <ChartContainer config={PAYMENT_METHOD_CHART_CONFIG} className="mx-auto aspect-square max-h-52">
+              <PieChart>
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      nameKey="method"
+                      formatter={(value) => formatBRL(Number(value))}
+                    />
+                  }
+                />
+                <Pie
+                  data={byPaymentMethod}
+                  dataKey="value"
+                  nameKey="method"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                >
+                  {byPaymentMethod.map((row) => (
+                    <Cell key={row.method} fill={row.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+
+            <ul className="space-y-3">
+              {byPaymentMethod.map((row, i) => (
+                <li key={row.method} className="flex items-center gap-3">
+                  <div
+                    className="grid h-7 w-7 place-items-center rounded-lg text-[11px] font-medium text-white"
+                    style={{ background: row.fill }}
+                  >
+                    {i + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[12px] font-medium">{row.name}</div>
+                  </div>
+                  <div className="text-[12px] font-medium">{formatBRL(row.value)}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Card>
     </>
   );
 }

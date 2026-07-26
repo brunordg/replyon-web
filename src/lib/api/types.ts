@@ -7,6 +7,9 @@ export type EntityStatus = "ACTIVE" | "INACTIVE";
 
 export type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
+/** Only ever set (non-null) once an appointment reaches COMPLETED. */
+export type PaymentMethod = "CASH" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
+
 /** Standard list wrapper used by customers/services/staff/companies (key: `content`). */
 export interface Page<T> {
   content: T[];
@@ -196,6 +199,10 @@ export interface AppointmentResponse {
   endDateTime: string;
   status: AppointmentStatus;
   notes: string;
+  /** Null unless status is COMPLETED — set once, at completion time. */
+  paymentMethod: PaymentMethod | null;
+  /** Frozen from the service's price at completion time; null unless COMPLETED. */
+  amountCharged: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -215,6 +222,10 @@ export interface CreateAppointmentRequest {
   serviceId: number;
   appointmentDateTime: string;
   notes?: string;
+}
+
+export interface CompleteAppointmentRequest {
+  paymentMethod: PaymentMethod;
 }
 
 export interface UpdateAppointmentRequest {

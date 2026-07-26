@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 import type {
   AppointmentPage,
   AppointmentResponse,
+  CompleteAppointmentRequest,
   CreateAppointmentRequest,
   UpdateAppointmentRequest,
 } from "./types";
@@ -30,8 +31,8 @@ export const appointmentsApi = {
     apiClient.post<AppointmentResponse>(`${base}/${id}/confirm`),
   cancel: (id: number) =>
     apiClient.post<AppointmentResponse>(`${base}/${id}/cancel`),
-  complete: (id: number) =>
-    apiClient.post<AppointmentResponse>(`${base}/${id}/complete`),
+  complete: (id: number, body: CompleteAppointmentRequest) =>
+    apiClient.post<AppointmentResponse>(`${base}/${id}/complete`, body),
   noShow: (id: number) =>
     apiClient.post<AppointmentResponse>(`${base}/${id}/no-show`),
 };

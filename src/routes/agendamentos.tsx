@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Check, CheckCheck, UserX, X } from "lucide-react";
 import { NovoAgendamentoDialog } from "@/components/novo-agendamento-dialog";
+import { ConcluirAgendamentoDialog } from "@/components/concluir-agendamento-dialog";
 import { useMemo, useState } from "react";
 import { useStaffList } from "@/lib/api/hooks/staff";
 import { useCustomers } from "@/lib/api/hooks/customers";
@@ -39,6 +40,7 @@ const FILTER_STATUS: Record<Exclude<Filter, "Todos">, AppointmentStatus> = {
 
 function AgendamentosPage() {
   const [active, setActive] = useState<Filter>("Todos");
+  const [completingId, setCompletingId] = useState<number | null>(null);
 
   const staffQuery = useStaffList({ size: 200 });
   const customersQuery = useCustomers({ size: 200 });
@@ -207,7 +209,7 @@ function AgendamentosPage() {
                               title="Concluir"
                               icon={CheckCheck}
                               disabled={action.isPending || a.status !== "CONFIRMED"}
-                              onClick={() => action.mutate({ id: a.id, action: "complete" })}
+                              onClick={() => setCompletingId(a.id)}
                             />
                             {/* Backend allows no-show from PENDING or CONFIRMED
                                 (Appointment.markNoShow) — same rule as complete. */}
@@ -245,6 +247,11 @@ function AgendamentosPage() {
           </>
         )}
       </Card>
+
+      <ConcluirAgendamentoDialog
+        appointmentId={completingId}
+        onOpenChange={(open) => !open && setCompletingId(null)}
+      />
     </>
   );
 }
