@@ -89,7 +89,7 @@ function ConfigPage() {
   };
 
   // Company form, seeded from the fetched company. `document` is read-only
-  // (the backend does not allow updating it); `address` has no backend field.
+  // (the backend does not allow updating it).
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -101,6 +101,7 @@ function ConfigPage() {
     setName(company.name);
     setEmail(company.email);
     setPhone(maskPhone(company.phone));
+    setAddress(company.address ?? "");
     setErrors({});
   }, [company]);
 
@@ -115,7 +116,10 @@ function ConfigPage() {
       return;
     }
     setErrors({});
-    updateCompany.mutate({ id: company.id, body: { name, email, phone } });
+    updateCompany.mutate({
+      id: company.id,
+      body: { name, email, phone, address: address.trim() || null },
+    });
   };
 
   // Nothing to save while the company is loading, or when the form still
@@ -124,7 +128,8 @@ function ConfigPage() {
     company != null &&
     (name !== company.name ||
       email !== company.email ||
-      phone.replace(/\D/g, "") !== company.phone.replace(/\D/g, ""));
+      phone.replace(/\D/g, "") !== company.phone.replace(/\D/g, "") ||
+      address.trim() !== (company.address ?? ""));
 
   return (
     <>
@@ -191,7 +196,7 @@ function ConfigPage() {
                 <Input
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Endereço (não sincronizado com o backend)"
+                  placeholder={isLoading ? "Carregando…" : "Rua, número, bairro, cidade"}
                   className="mt-1.5 rounded-[10px]"
                 />
               </div>

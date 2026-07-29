@@ -58,6 +58,7 @@ export interface CompanyResponse {
   document: string;
   email: string;
   phone: string;
+  address: string | null;
   status: EntityStatus;
   createdAt: string;
   updatedAt: string;
@@ -74,6 +75,7 @@ export interface UpdateCompanyRequest {
   name: string;
   email: string;
   phone: string;
+  address: string | null;
 }
 
 export interface SignUpRequest {

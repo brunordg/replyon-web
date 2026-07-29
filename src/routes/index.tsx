@@ -118,7 +118,8 @@ function DashboardPage() {
 
   const upcoming = useMemo(
     () =>
-      [...todays]
+      todays
+        .filter((a) => a.status === "PENDING" || a.status === "CONFIRMED")
         .sort((a, b) => a.appointmentDateTime.localeCompare(b.appointmentDateTime))
         .slice(0, 6),
     [todays],
