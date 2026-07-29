@@ -15,6 +15,8 @@ import { UserPlus, Loader2, Check } from "lucide-react";
 import { useCreateStaffWithServices } from "@/lib/api/hooks/staff";
 import { useServices } from "@/lib/api/hooks/services";
 import { cn, formatBRL } from "@/lib/utils";
+import { maskPhone } from "@/lib/masks";
+import { isValidPhone } from "@/lib/validators";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,7 +27,7 @@ export function NovoProfissionalDialog() {
   const [phone, setPhone] = useState("");
   const [specialties, setSpecialties] = useState("");
   const [selectedServices, setSelectedServices] = useState<Set<number>>(new Set());
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
 
   const createStaff = useCreateStaffWithServices();
   const { data: servicesPage, isLoading: servicesLoading } = useServices({ size: 200 });
@@ -56,10 +58,11 @@ export function NovoProfissionalDialog() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const nextErrors: { name?: string; email?: string } = {};
+    const nextErrors: { name?: string; email?: string; phone?: string } = {};
     if (!name.trim()) nextErrors.name = "Informe o nome.";
     if (!email.trim()) nextErrors.email = "Informe o e-mail.";
     else if (!EMAIL_RE.test(email.trim())) nextErrors.email = "E-mail inválido.";
+    if (phone.trim() && !isValidPhone(phone)) nextErrors.phone = "Telefone inválido.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -134,8 +137,10 @@ export function NovoProfissionalDialog() {
                 id="pro-telefone"
                 placeholder="(11) 90000-0000"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(maskPhone(e.target.value))}
+                inputMode="numeric"
               />
+              {errors.phone && <p className="text-[11px] text-danger">{errors.phone}</p>}
             </div>
           </div>
 

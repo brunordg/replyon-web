@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Loader2 } from "lucide-react";
 import { useCreateCustomer } from "@/lib/api/hooks/customers";
+import { maskPhone } from "@/lib/masks";
+import { isValidPhone } from "@/lib/validators";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -21,7 +23,7 @@ export function NovoClienteDialog() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
   const createCustomer = useCreateCustomer();
 
   function reset() {
@@ -38,10 +40,11 @@ export function NovoClienteDialog() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const nextErrors: { name?: string; email?: string } = {};
+    const nextErrors: { name?: string; email?: string; phone?: string } = {};
     if (!name.trim()) nextErrors.name = "Informe o nome.";
     if (!email.trim()) nextErrors.email = "Informe o e-mail.";
     else if (!EMAIL_RE.test(email.trim())) nextErrors.email = "E-mail inválido.";
+    if (phone.trim() && !isValidPhone(phone)) nextErrors.phone = "Telefone inválido.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -106,8 +109,10 @@ export function NovoClienteDialog() {
               id="cliente-telefone"
               placeholder="(11) 90000-0000"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(maskPhone(e.target.value))}
+              inputMode="numeric"
             />
+            {errors.phone && <p className="text-[11px] text-danger">{errors.phone}</p>}
           </div>
 
           <DialogFooter className="gap-2">

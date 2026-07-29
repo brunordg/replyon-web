@@ -10,6 +10,8 @@ import {
   Check, CalendarCheck, Scissors, Stethoscope, Dumbbell, Sparkles as Spark, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { maskDocument, maskPhone } from "@/lib/masks";
+import { isValidDocument, isValidPhone } from "@/lib/validators";
 import { companiesApi } from "@/lib/api/companies";
 import { useAuth } from "@/lib/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
@@ -44,6 +46,7 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ document?: string; phone?: string }>({});
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -52,6 +55,13 @@ function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (step < 3) {
+      if (step === 2) {
+        const nextErrors: { document?: string; phone?: string } = {};
+        if (!isValidDocument(companyDocument)) nextErrors.document = "CNPJ ou CPF inválido.";
+        if (!isValidPhone(companyPhone)) nextErrors.phone = "Telefone inválido.";
+        setErrors(nextErrors);
+        if (Object.keys(nextErrors).length > 0) return;
+      }
       setStep((s) => s + 1);
       return;
     }
@@ -204,10 +214,14 @@ function SignupPage() {
                         placeholder="00.000.000/0000-00"
                         className="pl-9 h-11"
                         value={companyDocument}
-                        onChange={(e) => setCompanyDocument(e.target.value)}
+                        onChange={(e) => setCompanyDocument(maskDocument(e.target.value))}
+                        inputMode="numeric"
                         required
                       />
                     </div>
+                    {errors.document && (
+                      <p className="text-[11px] text-danger">{errors.document}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="phone">Telefone</Label>
@@ -218,10 +232,12 @@ function SignupPage() {
                         placeholder="(11) 90000-0000"
                         className="pl-9 h-11"
                         value={companyPhone}
-                        onChange={(e) => setCompanyPhone(e.target.value)}
+                        onChange={(e) => setCompanyPhone(maskPhone(e.target.value))}
+                        inputMode="numeric"
                         required
                       />
                     </div>
+                    {errors.phone && <p className="text-[11px] text-danger">{errors.phone}</p>}
                   </div>
                 </div>
                 <div className="space-y-1.5">

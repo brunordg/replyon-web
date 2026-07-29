@@ -40,3 +40,14 @@ export function useDisconnectWhatsApp(companyId: number | undefined) {
     onError: (err) => toast.error(errMessage(err, "Não foi possível desconectar o WhatsApp")),
   });
 }
+
+// Não integrada ao polling de useWhatsAppStatus: cada chamada gera um código
+// novo no WAHA, invalidando o anterior. Só deve rodar em resposta a um clique
+// explícito do usuário no botão "Gerar código"/"Gerar novo código".
+export function useRequestPairingCode(companyId: number | undefined) {
+  return useMutation({
+    mutationFn: (phoneNumber: string) =>
+      whatsappApi.requestPairingCode(companyId as number, phoneNumber),
+    onError: (err) => toast.error(errMessage(err, "Não foi possível gerar o código de pareamento")),
+  });
+}

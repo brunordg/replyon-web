@@ -49,6 +49,7 @@ import {
   toLocalDateTime,
 } from "@/lib/appointment-slots";
 import { cn, colorFromString, formatBRL } from "@/lib/utils";
+import { maskPhone } from "@/lib/masks";
 
 /**
  * Radix rejects an empty string as a SelectItem value (it reserves "" for the
@@ -312,7 +313,7 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
               options={customers.map((c) => ({
                 value: String(c.id),
                 label: c.name,
-                hint: c.phone || c.email,
+                hint: c.phone ? maskPhone(c.phone) : c.email,
               }))}
               placeholder="Selecione o cliente"
               searchPlaceholder="Buscar cliente pelo nome…"

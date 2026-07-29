@@ -9,6 +9,7 @@ import { EditarClienteDialog } from "@/components/editar-cliente-dialog";
 import { useCustomers, useSetCustomerStatus } from "@/lib/api/hooks/customers";
 import { ENTITY_STATUS_LABEL, ENTITY_STATUS_STYLE } from "@/lib/api/status";
 import { colorFromString, initials } from "@/lib/utils";
+import { maskPhone } from "@/lib/masks";
 import { EmptyState, ErrorState, LoadingState } from "@/components/query-state";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import type { CustomerResponse } from "@/lib/api/types";
@@ -112,7 +113,8 @@ function ClientesPage() {
                     </td>
                     <td className="border-b border-ry-line px-4 py-3 text-[12px] whitespace-nowrap">
                       <span className="inline-flex items-center gap-1.5">
-                        <Phone className="h-3 w-3 text-ry-ink-soft" /> {c.phone || "—"}
+                        <Phone className="h-3 w-3 text-ry-ink-soft" />{" "}
+                        {c.phone ? maskPhone(c.phone) : "—"}
                       </span>
                     </td>
                     <td className="border-b border-ry-line px-4 py-3 text-[12px] font-medium whitespace-nowrap">

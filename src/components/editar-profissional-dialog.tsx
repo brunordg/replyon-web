@@ -32,6 +32,8 @@ import {
   type WeekState,
 } from "@/lib/schedule-week";
 import { cn, formatBRL } from "@/lib/utils";
+import { maskPhone } from "@/lib/masks";
+import { isValidPhone } from "@/lib/validators";
 import type { ScheduleDay, StaffResponse } from "@/lib/api/types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -53,10 +55,10 @@ export function EditarProfissionalDialog({
 
   const [name, setName] = useState(staff.name);
   const [email, setEmail] = useState(staff.email);
-  const [phone, setPhone] = useState(staff.phone ?? "");
+  const [phone, setPhone] = useState(maskPhone(staff.phone ?? ""));
   const [specialties, setSpecialties] = useState(staff.specialties.join(", "));
   const [selectedServices, setSelectedServices] = useState<Set<number>>(new Set());
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
 
   const [week, setWeek] = useState<WeekState>(DEFAULT_WEEK);
   const [interval, setInterval] = useState("30");
@@ -75,7 +77,7 @@ export function EditarProfissionalDialog({
       setTab(defaultTab);
       setName(staff.name);
       setEmail(staff.email);
-      setPhone(staff.phone ?? "");
+      setPhone(maskPhone(staff.phone ?? ""));
       setSpecialties(staff.specialties.join(", "));
       setErrors({});
       setWeekErrors({});
@@ -121,10 +123,11 @@ export function EditarProfissionalDialog({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const nextErrors: { name?: string; email?: string } = {};
+    const nextErrors: { name?: string; email?: string; phone?: string } = {};
     if (!name.trim()) nextErrors.name = "Informe o nome.";
     if (!email.trim()) nextErrors.email = "Informe o e-mail.";
     else if (!EMAIL_RE.test(email.trim())) nextErrors.email = "E-mail inválido.";
+    if (phone.trim() && !isValidPhone(phone)) nextErrors.phone = "Telefone inválido.";
     setErrors(nextErrors);
 
     const nextWeekErrors = validateWeek(week);
@@ -225,10 +228,12 @@ export function EditarProfissionalDialog({
                   </Label>
                   <Input
                     id="edit-pro-telefone"
-                    placeholder="(11) 99999-9999"
+                    placeholder="(11) 90000-0000"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(maskPhone(e.target.value))}
+                    inputMode="numeric"
                   />
+                  {errors.phone && <p className="text-[11px] text-danger">{errors.phone}</p>}
                 </div>
               </div>
 

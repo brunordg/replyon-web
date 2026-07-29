@@ -100,6 +100,7 @@ export interface WhatsAppConnectionResponse {
   status: WahaConnectionStatus;
   qrCodeBase64: string | null;
   meNumber: string | null;
+  pairingCode: string | null;
 }
 
 // ---- Customers ----
@@ -306,13 +307,7 @@ export type ScheduleDay = (typeof SCHEDULE_DAYS)[number];
 
 /** java.time.DayOfWeek, serialized as the enum name. */
 export type ApiDayOfWeek =
-  | "MONDAY"
-  | "TUESDAY"
-  | "WEDNESDAY"
-  | "THURSDAY"
-  | "FRIDAY"
-  | "SATURDAY"
-  | "SUNDAY";
+  "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
 
 /** `SCHEDULE_DAYS` is ordered Monday-first to match `DayOfWeek`'s 1..7. */
 export const API_DAY_OF_WEEK: Record<ScheduleDay, ApiDayOfWeek> = {

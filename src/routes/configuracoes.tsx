@@ -6,6 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -19,8 +20,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Building2, Bell, Lock, Clock, Loader2, LogOut, MessageCircle } from "lucide-react";
 import { useMyCompany, useUpdateCompany } from "@/lib/api/hooks/companies";
-import { useConnectWhatsApp, useDisconnectWhatsApp, useWhatsAppStatus } from "@/lib/api/hooks/whatsapp";
+import {
+  useConnectWhatsApp,
+  useDisconnectWhatsApp,
+  useRequestPairingCode,
+  useWhatsAppStatus,
+} from "@/lib/api/hooks/whatsapp";
 import { WHATSAPP_STATUS_LABEL, WHATSAPP_STATUS_STYLE } from "@/lib/api/status";
+import { maskDocument, maskPhone } from "@/lib/masks";
+import { isValidPhone } from "@/lib/validators";
 
 export const Route = createFileRoute("/configuracoes")({
   component: ConfigPage,
@@ -46,6 +54,39 @@ function ConfigPage() {
   const { data: whatsapp } = useWhatsAppStatus(company?.id);
   const connectWhatsApp = useConnectWhatsApp(company?.id);
   const disconnectWhatsApp = useDisconnectWhatsApp(company?.id);
+  const requestPairingCode = useRequestPairingCode(company?.id);
+
+  const [whatsappTab, setWhatsappTab] = useState<"qr" | "code">("qr");
+  const [pairingPhone, setPairingPhone] = useState("");
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [pairingPhoneError, setPairingPhoneError] = useState<string | null>(null);
+
+  const handleWhatsappTabChange = (value: string) => {
+    setWhatsappTab(value as "qr" | "code");
+    if (value === "code") {
+      setPairingPhone("");
+      setPairingCode(null);
+      setPairingPhoneError(null);
+    }
+  };
+
+  const handlePairingPhoneChange = (value: string) => {
+    setPairingPhone(maskPhone(value));
+    setPairingCode(null);
+    setPairingPhoneError(null);
+  };
+
+  const handleGeneratePairingCode = () => {
+    if (!isValidPhone(pairingPhone)) {
+      setPairingPhoneError("Telefone inválido.");
+      return;
+    }
+    setPairingPhoneError(null);
+    const digits = `55${pairingPhone.replace(/\D/g, "")}`;
+    requestPairingCode.mutate(digits, {
+      onSuccess: (data) => setPairingCode(data.pairingCode),
+    });
+  };
 
   // Company form, seeded from the fetched company. `document` is read-only
   // (the backend does not allow updating it); `address` has no backend field.
@@ -53,12 +94,14 @@ function ConfigPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [errors, setErrors] = useState<{ phone?: string }>({});
 
   const resetForm = useCallback(() => {
     if (!company) return;
     setName(company.name);
     setEmail(company.email);
-    setPhone(company.phone);
+    setPhone(maskPhone(company.phone));
+    setErrors({});
   }, [company]);
 
   useEffect(() => {
@@ -67,6 +110,11 @@ function ConfigPage() {
 
   const handleSave = () => {
     if (!company) return;
+    if (!isValidPhone(phone)) {
+      setErrors({ phone: "Telefone inválido." });
+      return;
+    }
+    setErrors({});
     updateCompany.mutate({ id: company.id, body: { name, email, phone } });
   };
 
@@ -74,7 +122,9 @@ function ConfigPage() {
   // matches what is persisted.
   const isDirty =
     company != null &&
-    (name !== company.name || email !== company.email || phone !== company.phone);
+    (name !== company.name ||
+      email !== company.email ||
+      phone.replace(/\D/g, "") !== company.phone.replace(/\D/g, ""));
 
   return (
     <>
@@ -114,7 +164,9 @@ function ConfigPage() {
               <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
                 Dados da empresa
               </span>
-              <p className="text-[11.5px] text-ry-ink-soft">Informações que aparecem para seus clientes</p>
+              <p className="text-[11.5px] text-ry-ink-soft">
+                Informações que aparecem para seus clientes
+              </p>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
@@ -129,7 +181,7 @@ function ConfigPage() {
               <div>
                 <Label className="text-[11.5px]">CNPJ</Label>
                 <Input
-                  value={company?.document ?? ""}
+                  value={maskDocument(company?.document ?? "")}
                   disabled
                   className="mt-1.5 rounded-[10px]"
                 />
@@ -147,9 +199,11 @@ function ConfigPage() {
                 <Label className="text-[11.5px]">Telefone</Label>
                 <Input
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(maskPhone(e.target.value))}
+                  inputMode="numeric"
                   className="mt-1.5 rounded-[10px]"
                 />
+                {errors.phone && <p className="mt-1 text-[11px] text-danger">{errors.phone}</p>}
               </div>
               <div>
                 <Label className="text-[11.5px]">E-mail</Label>
@@ -167,7 +221,9 @@ function ConfigPage() {
               <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
                 Horário de atendimento
               </span>
-              <p className="text-[11.5px] text-ry-ink-soft">Defina os dias e horários em que a agenda é aberta</p>
+              <p className="text-[11.5px] text-ry-ink-soft">
+                Defina os dias e horários em que a agenda é aberta
+              </p>
             </div>
             <div className="space-y-2">
               {[
@@ -188,9 +244,17 @@ function ConfigPage() {
                     <div className="w-24 text-[12px] font-medium">{dia}</div>
                     <Switch defaultChecked={ativo} />
                     <div className="ml-auto flex items-center gap-2 text-[12px]">
-                      <Input defaultValue={ini} disabled={!ativo} className="h-8 w-20 rounded-lg text-center" />
+                      <Input
+                        defaultValue={ini}
+                        disabled={!ativo}
+                        className="h-8 w-20 rounded-lg text-center"
+                      />
                       <span className="text-ry-ink-soft">até</span>
-                      <Input defaultValue={fim} disabled={!ativo} className="h-8 w-20 rounded-lg text-center" />
+                      <Input
+                        defaultValue={fim}
+                        disabled={!ativo}
+                        className="h-8 w-20 rounded-lg text-center"
+                      />
                     </div>
                   </div>
                 );
@@ -203,7 +267,9 @@ function ConfigPage() {
               <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
                 Notificações
               </span>
-              <p className="text-[11.5px] text-ry-ink-soft">Como você e seus clientes são avisados</p>
+              <p className="text-[11.5px] text-ry-ink-soft">
+                Como você e seus clientes são avisados
+              </p>
             </div>
             <div className="space-y-3">
               {[
@@ -214,7 +280,10 @@ function ConfigPage() {
               ].map((r) => {
                 const [t, s, v] = r as [string, string, boolean];
                 return (
-                  <div key={t} className="flex items-center gap-4 border-b border-ry-line pb-3 last:border-0 last:pb-0">
+                  <div
+                    key={t}
+                    className="flex items-center gap-4 border-b border-ry-line pb-3 last:border-0 last:pb-0"
+                  >
                     <div className="flex-1">
                       <b className="block text-[12.5px] font-medium">{t}</b>
                       <span className="text-[11px] text-ry-ink-soft">{s}</span>
@@ -246,50 +315,122 @@ function ConfigPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[200px_1fr]">
-              <div className="flex h-[200px] items-center justify-center rounded-[10px] border border-ry-line bg-ry-bg">
-                {whatsapp?.status === "CONNECTING" && whatsapp.qrCodeBase64 ? (
-                  <img
-                    src={`data:image/png;base64,${whatsapp.qrCodeBase64}`}
-                    alt="QR Code para conectar o WhatsApp"
-                    className="h-full w-full rounded-[10px] object-contain p-2"
-                  />
-                ) : whatsapp?.status === "CONNECTED" ? (
-                  <div className="text-center text-[11.5px] text-ok">
-                    <MessageCircle className="mx-auto mb-1 h-8 w-8" />
-                    Conectado
-                  </div>
-                ) : (
-                  <div className="text-center text-[11.5px] text-ry-ink-soft">
-                    <MessageCircle className="mx-auto mb-1 h-8 w-8 opacity-40" />
-                    Nenhuma sessão ativa
-                  </div>
-                )}
-              </div>
+            <Tabs value={whatsappTab} onValueChange={handleWhatsappTabChange}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="qr">QR Code</TabsTrigger>
+                <TabsTrigger value="code">Código</TabsTrigger>
+              </TabsList>
 
-              <div className="rounded-[10px] border border-ry-line p-4">
-                <span className="text-[10.5px] font-medium uppercase tracking-[1px] text-ry-ink-soft">
-                  Sessão
-                </span>
-                <p className="mb-3 truncate font-mono text-[13px] font-medium">
-                  {whatsapp?.sessionName ?? "Gerada automaticamente a partir do nome da empresa"}
-                </p>
-                <ol className="space-y-2 text-[11.5px] text-ry-ink-soft">
-                  {[
-                    "Abra o WhatsApp no celular da empresa",
-                    "Toque em Aparelhos conectados → Conectar aparelho",
-                    "Aponte a câmera para o QR Code ao lado",
-                  ].map((step, i) => (
-                    <li key={step} className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-ry-blue-50 text-[9.5px] font-semibold text-ry-blue-600">
-                        {i + 1}
-                      </span>
-                      {step}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
+              <TabsContent value="qr">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[200px_1fr]">
+                  <div className="flex h-[200px] items-center justify-center rounded-[10px] border border-ry-line bg-ry-bg">
+                    {whatsapp?.status === "CONNECTING" && whatsapp.qrCodeBase64 ? (
+                      <img
+                        src={`data:image/png;base64,${whatsapp.qrCodeBase64}`}
+                        alt="QR Code para conectar o WhatsApp"
+                        className="h-full w-full rounded-[10px] object-contain p-2"
+                      />
+                    ) : whatsapp?.status === "CONNECTED" ? (
+                      <div className="text-center text-[11.5px] text-ok">
+                        <MessageCircle className="mx-auto mb-1 h-8 w-8" />
+                        Conectado
+                      </div>
+                    ) : (
+                      <div className="text-center text-[11.5px] text-ry-ink-soft">
+                        <MessageCircle className="mx-auto mb-1 h-8 w-8 opacity-40" />
+                        Nenhuma sessão ativa
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-[10px] border border-ry-line p-4">
+                    <span className="text-[10.5px] font-medium uppercase tracking-[1px] text-ry-ink-soft">
+                      Sessão
+                    </span>
+                    <p className="mb-3 truncate font-mono text-[13px] font-medium">
+                      {whatsapp?.sessionName ??
+                        "Gerada automaticamente a partir do nome da empresa"}
+                    </p>
+                    <ol className="space-y-2 text-[11.5px] text-ry-ink-soft">
+                      {[
+                        "Abra o WhatsApp no celular da empresa",
+                        "Toque em Aparelhos conectados → Conectar aparelho",
+                        "Aponte a câmera para o QR Code ao lado",
+                      ].map((step, i) => (
+                        <li key={step} className="flex items-start gap-2">
+                          <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-ry-blue-50 text-[9.5px] font-semibold text-ry-blue-600">
+                            {i + 1}
+                          </span>
+                          {step}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[200px_1fr]">
+                  <div className="flex h-[200px] items-center justify-center rounded-[10px] border border-ry-line bg-ry-bg">
+                    {pairingCode ? (
+                      <div className="text-center">
+                        <p className="font-mono text-[22px] font-semibold tracking-wider">
+                          {pairingCode}
+                        </p>
+                        <p className="mt-1 text-[11px] text-ry-ink-soft">Código de pareamento</p>
+                      </div>
+                    ) : (
+                      <div className="text-center text-[11.5px] text-ry-ink-soft">
+                        <MessageCircle className="mx-auto mb-1 h-8 w-8 opacity-40" />
+                        Informe o telefone e gere um código
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-[10px] border border-ry-line p-4">
+                    <Label className="text-[10.5px] font-medium uppercase tracking-[1px] text-ry-ink-soft">
+                      Telefone do WhatsApp a conectar
+                    </Label>
+                    <Input
+                      value={pairingPhone}
+                      onChange={(e) => handlePairingPhoneChange(e.target.value)}
+                      inputMode="numeric"
+                      placeholder="(11) 90000-0000"
+                      className="mt-1.5 rounded-[10px] font-mono"
+                    />
+                    {pairingPhoneError && (
+                      <p className="mt-1 text-[11px] text-danger">{pairingPhoneError}</p>
+                    )}
+
+                    <ol className="mt-3 space-y-2 text-[11.5px] text-ry-ink-soft">
+                      {[
+                        "Abra o WhatsApp no celular da empresa",
+                        "Toque em Aparelhos conectados → Conectar com número de telefone",
+                        "Digite o código gerado ao lado",
+                      ].map((step, i) => (
+                        <li key={step} className="flex items-start gap-2">
+                          <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-ry-blue-50 text-[9.5px] font-semibold text-ry-blue-600">
+                            {i + 1}
+                          </span>
+                          {step}
+                        </li>
+                      ))}
+                    </ol>
+
+                    <Button
+                      onClick={handleGeneratePairingCode}
+                      disabled={!company || requestPairingCode.isPending}
+                      className="mt-3 w-full rounded-[10px] bg-ry-blue-600 hover:bg-ry-blue-700"
+                    >
+                      {requestPairingCode.isPending && (
+                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      )}
+                      {pairingCode ? "Gerar novo código" : "Gerar código"}
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
 
             <div className="mt-4 flex justify-end">
               {whatsapp?.status === "CONNECTED" ? (
@@ -304,9 +445,9 @@ function ConfigPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Desconectar o WhatsApp?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        As confirmações e lembretes automáticos por WhatsApp vão parar de ser enviados
-                        até você reconectar. A sessão fica salva e pode ser reconectada a qualquer
-                        momento, sem precisar gerar uma nova.
+                        As confirmações e lembretes automáticos por WhatsApp vão parar de ser
+                        enviados até você reconectar. A sessão fica salva e pode ser reconectada a
+                        qualquer momento, sem precisar gerar uma nova.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -316,13 +457,15 @@ function ConfigPage() {
                         disabled={disconnectWhatsApp.isPending}
                         className={buttonVariants({ variant: "destructive" })}
                       >
-                        {disconnectWhatsApp.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                        {disconnectWhatsApp.isPending && (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        )}
                         Desconectar
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              ) : (
+              ) : whatsappTab === "qr" ? (
                 <Button
                   onClick={() => connectWhatsApp.mutate()}
                   disabled={!company || connectWhatsApp.isPending}
@@ -331,7 +474,7 @@ function ConfigPage() {
                   {connectWhatsApp.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
                   Conectar WhatsApp
                 </Button>
-              )}
+              ) : null}
             </div>
           </Card>
 

@@ -10,4 +10,8 @@ export const whatsappApi = {
     apiClient.post<WhatsAppConnectionResponse>(`${base}/${companyId}/whatsapp/connect`),
   disconnect: (companyId: number) =>
     apiClient.post<WhatsAppConnectionResponse>(`${base}/${companyId}/whatsapp/disconnect`),
+  requestPairingCode: (companyId: number, phoneNumber: string) =>
+    apiClient.post<WhatsAppConnectionResponse>(`${base}/${companyId}/whatsapp/pairing-code`, {
+      phoneNumber,
+    }),
 };
