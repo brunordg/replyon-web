@@ -2,16 +2,23 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Check, CheckCheck, UserX, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Download, Check, CheckCheck, UserX, X, CalendarDays, Filter } from "lucide-react";
 import { NovoAgendamentoDialog } from "@/components/novo-agendamento-dialog";
 import { ConcluirAgendamentoDialog } from "@/components/concluir-agendamento-dialog";
+import { Combobox } from "@/components/combobox";
+import { StaffFilter } from "@/components/staff-filter";
 import { useMemo, useState } from "react";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useStaffList } from "@/lib/api/hooks/staff";
 import { useCustomers } from "@/lib/api/hooks/customers";
 import { useServices } from "@/lib/api/hooks/services";
 import { useAllAppointmentsByStaff, useAppointmentAction } from "@/lib/api/hooks/appointments";
 import { APPOINTMENT_STATUS_LABEL, APPOINTMENT_STATUS_STYLE } from "@/lib/api/status";
 import { colorFromString, formatBRL, formatDateTime, initials } from "@/lib/utils";
+import { dateKey, startOfDay } from "@/lib/agenda-range";
+import { formatLongDate } from "@/lib/appointment-slots";
 import { EmptyState, ErrorState, LoadingState } from "@/components/query-state";
 import type { AppointmentStatus } from "@/lib/api/types";
 
@@ -42,12 +49,38 @@ function AgendamentosPage() {
   const [active, setActive] = useState<Filter>("Todos");
   const [completingId, setCompletingId] = useState<number | null>(null);
 
+  const [dateFrom, setDateFrom] = useState<Date>(() => startOfDay(new Date()));
+  const [dateTo, setDateTo] = useState<Date>(() => startOfDay(new Date()));
+  const [dateFromOpen, setDateFromOpen] = useState(false);
+  const [dateToOpen, setDateToOpen] = useState(false);
+  const [customerId, setCustomerId] = useState<string>("");
+  /** Kept so the filter trigger keeps showing the chosen client once search text moves on. */
+  const [customerLabel, setCustomerLabel] = useState<string>("");
+  const [customerQuery, setCustomerQuery] = useState<string>("");
+  const [selectedStaff, setSelectedStaff] = useState<Set<number>>(() => new Set());
+
   const staffQuery = useStaffList({ size: 200 });
   const customersQuery = useCustomers({ size: 200 });
   const servicesQuery = useServices({ size: 200 });
 
+  // Customer *filter* search runs on the server, same as novo-agendamento-dialog's
+  // combobox: the `size: 200` query above is only for labeling rows already on
+  // screen, and would silently hide any client past #200 from this dropdown.
+  const customerSearch = useDebouncedValue(customerQuery).trim();
+  const customerFilterQuery = useCustomers({ size: 20, name: customerSearch || undefined });
+
   const staff = staffQuery.data?.content ?? [];
   const staffIds = useMemo(() => staff.map((s) => s.id), [staff]);
+  const customers = customersQuery.data?.content ?? [];
+  const customerFilterOptions = useMemo(
+    () =>
+      (customerFilterQuery.data?.content ?? []).map((c) => ({
+        value: String(c.id),
+        label: c.name,
+        hint: c.email ?? undefined,
+      })),
+    [customerFilterQuery.data],
+  );
 
   const {
     appointments,
@@ -69,13 +102,37 @@ function AgendamentosPage() {
 
   const action = useAppointmentAction();
 
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const hasFilters =
+    dateKey(dateFrom) !== dateKey(today) ||
+    dateKey(dateTo) !== dateKey(today) ||
+    customerId !== "" ||
+    selectedStaff.size > 0;
+
+  function clearFilters() {
+    setDateFrom(startOfDay(new Date()));
+    setDateTo(startOfDay(new Date()));
+    setCustomerId("");
+    setCustomerLabel("");
+    setCustomerQuery("");
+    setSelectedStaff(new Set());
+  }
+
+  // Filters combine with AND; the sort step always runs last so the visible
+  // rows stay most-recent-first regardless of which filters are active.
   const rows = useMemo(() => {
-    const sorted = [...appointments].sort((a, b) =>
-      b.appointmentDateTime.localeCompare(a.appointmentDateTime),
-    );
-    if (active === "Todos") return sorted;
-    return sorted.filter((a) => a.status === FILTER_STATUS[active]);
-  }, [appointments, active]);
+    const fromKey = dateKey(dateFrom);
+    const toKey = dateKey(dateTo);
+    const filtered = appointments.filter((a) => {
+      const apptKey = a.appointmentDateTime.slice(0, 10);
+      if (apptKey < fromKey || apptKey > toKey) return false;
+      if (customerId !== "" && String(a.customerId) !== customerId) return false;
+      if (selectedStaff.size > 0 && !selectedStaff.has(a.staffId)) return false;
+      if (active !== "Todos" && a.status !== FILTER_STATUS[active]) return false;
+      return true;
+    });
+    return filtered.sort((a, b) => b.appointmentDateTime.localeCompare(a.appointmentDateTime));
+  }, [appointments, active, dateFrom, dateTo, customerId, selectedStaff]);
 
   const isLoading =
     staffQuery.isLoading || apptLoading || customersQuery.isLoading || servicesQuery.isLoading;
@@ -98,6 +155,61 @@ function AgendamentosPage() {
       />
 
       <Card className="rounded-[14px] border-ry-line overflow-hidden p-0">
+        <div className="flex flex-wrap items-center gap-2.5 border-b border-ry-line bg-ry-blue-50 px-4 py-2.5">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-ry-ink-soft">
+            <Filter className="h-3.5 w-3.5" /> Filtros
+          </span>
+
+          <DateFilterButton
+            label="De"
+            date={dateFrom}
+            open={dateFromOpen}
+            onOpenChange={setDateFromOpen}
+            onSelect={(d) => {
+              setDateFrom(d);
+              if (d > dateTo) setDateTo(d);
+            }}
+          />
+          <DateFilterButton
+            label="Até"
+            date={dateTo}
+            open={dateToOpen}
+            onOpenChange={setDateToOpen}
+            onSelect={(d) => {
+              setDateTo(d);
+              if (d < dateFrom) setDateFrom(d);
+            }}
+          />
+
+          <div className="w-48">
+            <Combobox
+              value={customerId}
+              valueLabel={customerLabel}
+              onChange={(id) => {
+                setCustomerId(id);
+                setCustomerLabel(customerFilterOptions.find((o) => o.value === id)?.label ?? "");
+              }}
+              options={customerFilterOptions}
+              onSearchChange={setCustomerQuery}
+              loading={customerFilterQuery.isFetching}
+              placeholder="Todos clientes"
+              searchPlaceholder="Buscar cliente…"
+              emptyLabel="Nenhum cliente encontrado."
+            />
+          </div>
+
+          <StaffFilter staff={staff} selected={selectedStaff} onChange={setSelectedStaff} />
+
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 text-[11px] text-ry-ink-soft transition hover:text-ry-blue-600"
+            >
+              <X className="h-3 w-3" /> Limpar filtros
+            </button>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-center gap-3 border-b border-ry-line px-4 py-3.5">
           <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
             Próximos atendimentos
@@ -253,6 +365,42 @@ function AgendamentosPage() {
         onOpenChange={(open) => !open && setCompletingId(null)}
       />
     </>
+  );
+}
+
+function DateFilterButton({
+  label,
+  date,
+  open,
+  onOpenChange,
+  onSelect,
+}: {
+  label: string;
+  date: Date;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelect: (date: Date) => void;
+}) {
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <button className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-ry-line bg-white px-3 text-[11.5px] transition hover:border-ry-blue-500">
+          <CalendarDays className="h-3.5 w-3.5 text-ry-ink-soft" />
+          <span className="text-ry-ink-soft">{label}:</span> {formatLongDate(date)}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(d) => {
+            if (d) onSelect(startOfDay(d));
+            onOpenChange(false);
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 

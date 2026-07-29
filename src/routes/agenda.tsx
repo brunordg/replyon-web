@@ -9,17 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown, ChevronLeft, ChevronRight, Download, Filter, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Filter, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useStaffList } from "@/lib/api/hooks/staff";
+import { StaffFilter } from "@/components/staff-filter";
 import { useCustomers } from "@/lib/api/hooks/customers";
 import { useServices } from "@/lib/api/hooks/services";
 import { useAllAppointmentsByStaff } from "@/lib/api/hooks/appointments";
@@ -329,7 +322,13 @@ function AgendaPage() {
             <Filter className="h-3.5 w-3.5" /> Filtros
           </span>
 
-          <StaffFilter staff={staff} selected={selectedStaff} onChange={setSelectedStaff} />
+          <StaffFilter
+            staff={staff}
+            selected={selectedStaff}
+            onChange={setSelectedStaff}
+            max={MAX_DAY_COLUMNS}
+            capLabel={`Até ${MAX_DAY_COLUMNS} profissionais na visão Dia`}
+          />
           <FilterSelect
             value={serviceFilter}
             onChange={setServiceFilter}
@@ -398,88 +397,6 @@ function NavButton({
     >
       {children}
     </button>
-  );
-}
-
-/**
- * Multi-select for professionals, capped at MAX_DAY_COLUMNS because that is how
- * many columns the Dia view can show legibly. An empty selection means "decide
- * for me" — the Dia view then falls back to whoever is booked that day.
- */
-function StaffFilter({
-  staff,
-  selected,
-  onChange,
-}: {
-  staff: StaffResponse[];
-  selected: Set<number>;
-  onChange: (next: Set<number>) => void;
-}) {
-  const atLimit = selected.size >= MAX_DAY_COLUMNS;
-
-  function toggle(id: number) {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else if (next.size < MAX_DAY_COLUMNS) next.add(id);
-    onChange(next);
-  }
-
-  const label =
-    selected.size === 0
-      ? "Todos profissionais"
-      : selected.size === 1
-        ? (staff.find((s) => selected.has(s.id))?.name ?? "1 selecionado")
-        : `${selected.size} selecionados`;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="inline-flex h-8 min-w-[150px] items-center justify-between gap-2 rounded-lg border border-ry-line bg-white px-3 text-[11.5px] transition hover:border-ry-blue-500">
-          <span className="truncate">{label}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-72 w-56 overflow-y-auto">
-        <DropdownMenuLabel className="text-[11px] font-normal text-ry-ink-soft">
-          Até {MAX_DAY_COLUMNS} profissionais na visão Dia
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {staff.length === 0 ? (
-          <div className="px-2 py-1.5 text-[11.5px] text-ry-ink-soft">
-            Nenhum profissional ativo.
-          </div>
-        ) : (
-          staff.map((s) => {
-            const checked = selected.has(s.id);
-            return (
-              <DropdownMenuCheckboxItem
-                key={s.id}
-                checked={checked}
-                // Blocking the unchecked ones at the cap makes the limit obvious
-                // without silently dropping a pick the user just made.
-                disabled={!checked && atLimit}
-                onSelect={(e) => e.preventDefault()}
-                onCheckedChange={() => toggle(s.id)}
-                className="text-[12px]"
-              >
-                {s.name}
-              </DropdownMenuCheckboxItem>
-            );
-          })
-        )}
-        {selected.size > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <button
-              onClick={() => onChange(new Set())}
-              className="w-full px-2 py-1.5 text-left text-[11.5px] text-ry-ink-soft transition hover:text-ry-blue-600"
-            >
-              Limpar seleção
-            </button>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 
