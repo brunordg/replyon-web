@@ -433,3 +433,21 @@ export interface DashboardMetricsResponse {
   /** The one metric that counts what did NOT happen. */
   noShowsMonth: DashboardCountMetric;
 }
+
+// ---- Notifications ----
+
+/** "APPOINTMENT_CREATED" | "APPOINTMENT_CANCELLED" | "APPOINTMENT_RESCHEDULED" */
+export type NotificationType = "APPOINTMENT_CREATED" | "APPOINTMENT_CANCELLED" | "APPOINTMENT_RESCHEDULED";
+
+/**
+ * Informational feed of WhatsApp-automated appointment events only — manual
+ * dashboard actions never produce one. No read/unread state: this is not an
+ * inbox, just an ambient "the bot did this" signal.
+ */
+export interface NotificationResponse {
+  id: number;
+  type: NotificationType;
+  message: string;
+  appointmentId: number | null;
+  createdAt: string;
+}

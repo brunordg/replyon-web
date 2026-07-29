@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Bell, Loader2, Mail, Search } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   CommandDialog,
@@ -10,8 +12,10 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { MIN_SEARCH_LENGTH, useGlobalSearch } from "@/lib/api/hooks/search";
+import { useNotifications } from "@/lib/api/hooks/notifications";
 import { ENTITY_STATUS_LABEL, ENTITY_STATUS_STYLE } from "@/lib/api/status";
 import { cn, colorFromString, initials } from "@/lib/utils";
 import type { SearchHit } from "@/lib/api/types";
@@ -37,6 +41,13 @@ export function Topbar() {
   const query = useDebouncedValue(term, 350).trim();
 
   const { data, isFetching, isError } = useGlobalSearch(query, open);
+
+  const { data: notificationsData } = useNotifications();
+  const notifications = notificationsData ?? [];
+  const recentCount = useMemo(() => {
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    return notifications.filter((n) => new Date(n.createdAt).getTime() >= dayAgo).length;
+  }, [notifications]);
 
   // Ctrl/⌘+K from anywhere. Safe to bind once: Topbar mounts a single time in
   // AppShell, above the router outlet.
@@ -130,12 +141,42 @@ export function Topbar() {
         <button className="grid h-9 w-9 place-items-center rounded-[10px] border border-ry-line bg-card text-ry-ink-soft hover:border-ry-blue-500 hover:text-ry-blue-600 transition-colors">
           <Mail className="h-4 w-4" />
         </button>
-        <button className="relative grid h-9 w-9 place-items-center rounded-[10px] border border-ry-line bg-card text-ry-ink-soft hover:border-ry-blue-500 hover:text-ry-blue-600 transition-colors">
-          <Bell className="h-4 w-4" />
-          <span className="absolute -top-1 -right-1 rounded-full border-2 border-white bg-ry-accent px-1 text-[9px] font-semibold text-white">
-            3
-          </span>
-        </button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="relative grid h-9 w-9 place-items-center rounded-[10px] border border-ry-line bg-card text-ry-ink-soft hover:border-ry-blue-500 hover:text-ry-blue-600 transition-colors">
+              <Bell className="h-4 w-4" />
+              {recentCount > 0 && (
+                <span className="absolute -top-1 -right-1 rounded-full border-2 border-white bg-ry-accent px-1 text-[9px] font-semibold text-white">
+                  {recentCount > 9 ? "9+" : recentCount}
+                </span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-0">
+            <div className="border-b border-ry-line px-4 py-3">
+              <span className="font-display text-[13px] font-medium uppercase tracking-[1px]">
+                Notificações
+              </span>
+              <p className="text-[11px] text-ry-ink-soft">Eventos automáticos via WhatsApp</p>
+            </div>
+            {notifications.length === 0 ? (
+              <div className="px-4 py-8 text-center text-[12px] text-ry-ink-soft">
+                Nenhuma notificação recente.
+              </div>
+            ) : (
+              <ul className="max-h-96 overflow-y-auto">
+                {notifications.map((n) => (
+                  <li key={n.id} className="border-b border-ry-line px-4 py-3 last:border-0">
+                    <p className="text-[12.5px]">{n.message}</p>
+                    <p className="mt-0.5 text-[11px] text-ry-ink-soft">
+                      {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: ptBR })}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PopoverContent>
+        </Popover>
         <div
           className="grid h-9 w-9 place-items-center rounded-full text-[13px] font-semibold text-white"
           style={{
