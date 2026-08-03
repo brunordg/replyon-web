@@ -20,7 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Check, Clock } from "lucide-react";
-import { useStaffServices, useUpdateStaffWithServices } from "@/lib/api/hooks/staff";
+import {
+  useSetServiceCommission,
+  useStaffServiceCommissions,
+  useStaffServices,
+  useUpdateStaffWithServices,
+} from "@/lib/api/hooks/staff";
 import { useServices } from "@/lib/api/hooks/services";
 import { useSaveSchedule, useStaffSchedule } from "@/lib/api/hooks/schedules";
 import { HorariosSemanais } from "@/components/horarios-semanais";
@@ -58,6 +63,7 @@ export function EditarProfissionalDialog({
   const [phone, setPhone] = useState(maskPhone(staff.phone ?? ""));
   const [specialties, setSpecialties] = useState(staff.specialties.join(", "));
   const [selectedServices, setSelectedServices] = useState<Set<number>>(new Set());
+  const [commissionInputs, setCommissionInputs] = useState<Record<number, string>>({});
   const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
 
   const [week, setWeek] = useState<WeekState>(DEFAULT_WEEK);
@@ -66,9 +72,11 @@ export function EditarProfissionalDialog({
 
   const updateStaff = useUpdateStaffWithServices();
   const saveSchedule = useSaveSchedule();
+  const setCommission = useSetServiceCommission();
   const { data: servicesPage, isLoading: servicesLoading } = useServices({ size: 200 });
   const services = servicesPage?.content ?? [];
   const { data: currentServiceIds, isLoading: currentLoading } = useStaffServices(staff.id, open);
+  const { data: currentCommissions } = useStaffServiceCommissions(staff.id, open);
   const { data: schedule, isLoading: scheduleLoading } = useStaffSchedule(staff.id, open);
 
   // Repopula os campos de texto sempre que o diálogo abre.
@@ -97,6 +105,23 @@ export function EditarProfissionalDialog({
     }
   }, [open, currentServiceIds]);
 
+  // Popula os campos de % de comissão quando os percentuais atuais carregam (uma vez por abertura).
+  const commissionsSeeded = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      commissionsSeeded.current = false;
+      return;
+    }
+    if (!commissionsSeeded.current && currentCommissions) {
+      const seeded: Record<number, string> = {};
+      for (const [serviceId, percentage] of currentCommissions) {
+        if (percentage != null) seeded[serviceId] = String(percentage);
+      }
+      setCommissionInputs(seeded);
+      commissionsSeeded.current = true;
+    }
+  }, [open, currentCommissions]);
+
   // Popula a semana quando a agenda carrega. Um profissional que ainda não tem
   // agenda mantém a semana padrão.
   const weekSeeded = useRef(false);
@@ -118,6 +143,24 @@ export function EditarProfissionalDialog({
       else next.add(id);
       return next;
     });
+  }
+
+  function handleCommissionChange(serviceId: number, value: string) {
+    setCommissionInputs((prev) => ({ ...prev, [serviceId]: value }));
+  }
+
+  // Dispara uma chamada de comissão por serviço cujo campo difere do valor
+  // carregado (ausência no mapa carregado conta como 0, o default de uma
+  // atribuição nova).
+  function commitCommissions() {
+    for (const serviceId of selectedServices) {
+      const raw = (commissionInputs[serviceId] ?? "0").trim();
+      const value = Number(raw.replace(",", "."));
+      if (Number.isNaN(value) || value < 0 || value > 100) continue;
+      const loaded = currentCommissions?.get(serviceId) ?? 0;
+      if (Math.abs(loaded - value) < 0.001) continue;
+      setCommission.mutate({ staffId: staff.id, serviceId, body: { commissionPercentage: value } });
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -161,7 +204,8 @@ export function EditarProfissionalDialog({
         currentServiceIds: currentServiceIds ?? [],
       },
       {
-        onSuccess: () =>
+        onSuccess: () => {
+          commitCommissions();
           saveSchedule.mutate(
             {
               staffId: staff.id,
@@ -169,7 +213,8 @@ export function EditarProfissionalDialog({
               body: toScheduleRequest(week, Number(interval)),
             },
             { onSuccess: () => setOpen(false) },
-          ),
+          );
+        },
       },
     );
   }
@@ -285,6 +330,36 @@ export function EditarProfissionalDialog({
                   </div>
                 )}
               </div>
+
+              {selectedServices.size > 0 && (
+                <div className="space-y-1.5">
+                  <Label>
+                    Comissão por serviço <span className="text-ry-ink-soft">(opcional)</span>
+                  </Label>
+                  <div className="space-y-1.5 rounded-[10px] border border-ry-line p-2.5">
+                    {services
+                      .filter((s) => selectedServices.has(s.id))
+                      .map((s) => (
+                        <div key={s.id} className="flex items-center justify-between gap-2">
+                          <span className="text-[12px] text-ry-ink-soft">{s.name}</span>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              value={commissionInputs[s.id] ?? "0"}
+                              onChange={(e) => handleCommissionChange(s.id, e.target.value)}
+                              className="h-7 w-20 text-[12px]"
+                            />
+                            <span className="text-[11px] text-ry-ink-soft">%</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="horarios" className="space-y-3 pt-4">

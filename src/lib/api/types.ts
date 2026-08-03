@@ -193,6 +193,16 @@ export interface AssignServicesRequest {
   serviceIds: number[];
 }
 
+/** Retornado por GET /staff/{id}/services/commissions. */
+export interface StaffServiceAssignmentResponse {
+  serviceId: number;
+  commissionPercentage: number | null;
+}
+
+export interface SetServiceCommissionRequest {
+  commissionPercentage: number;
+}
+
 // ---- Agendamentos ----
 export interface AppointmentResponse {
   id: number;

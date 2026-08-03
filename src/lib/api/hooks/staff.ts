@@ -6,12 +6,14 @@ import { ApiError } from "../client";
 import type {
   CreateStaffRequest,
   ListParams,
+  SetServiceCommissionRequest,
   StaffServiceResponse,
   UpdateStaffRequest,
 } from "../types";
 
 const KEY = "staff";
 const SERVICES_KEY = "staff-services";
+const COMMISSIONS_KEY = "staff-service-commissions";
 
 function errMessage(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
@@ -130,6 +132,35 @@ export function useStaffServicesMap(staffIds: number[], enabled = true) {
   }, [signature]);
 
   return { byStaffId, isLoading, isError };
+}
+
+/** Percentual de comissão de cada serviço atribuído a um profissional, por serviceId. */
+export function useStaffServiceCommissions(staffId: number | undefined, enabled = true) {
+  return useQuery({
+    queryKey: [COMMISSIONS_KEY, staffId],
+    queryFn: () => staffApi.listServiceCommissions(staffId as number),
+    enabled: enabled && staffId != null,
+    select: (assignments) => new Map(assignments.map((a) => [a.serviceId, a.commissionPercentage])),
+  });
+}
+
+export function useSetServiceCommission() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      staffId,
+      serviceId,
+      body,
+    }: {
+      staffId: number;
+      serviceId: number;
+      body: SetServiceCommissionRequest;
+    }) => staffApi.setServiceCommission(staffId, serviceId, body),
+    onSuccess: (_data, { staffId }) => {
+      qc.invalidateQueries({ queryKey: [COMMISSIONS_KEY, staffId] });
+    },
+    onError: (err) => toast.error(errMessage(err, "Não foi possível salvar a comissão")),
+  });
 }
 
 /**

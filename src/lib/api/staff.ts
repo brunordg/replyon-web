@@ -4,7 +4,9 @@ import type {
   CreateStaffRequest,
   ListParams,
   Page,
+  SetServiceCommissionRequest,
   StaffResponse,
+  StaffServiceAssignmentResponse,
   StaffServiceResponse,
   UpdateStaffRequest,
 } from "./types";
@@ -30,4 +32,8 @@ export const staffApi = {
     apiClient.post<void>(`${base}/${staffId}/services`, body),
   unassignService: (staffId: number, serviceId: number) =>
     apiClient.delete<void>(`${base}/${staffId}/services/${serviceId}`),
+  listServiceCommissions: (staffId: number) =>
+    apiClient.get<StaffServiceAssignmentResponse[]>(`${base}/${staffId}/services/commissions`),
+  setServiceCommission: (staffId: number, serviceId: number, body: SetServiceCommissionRequest) =>
+    apiClient.put<void>(`${base}/${staffId}/services/${serviceId}/commission`, body),
 };
