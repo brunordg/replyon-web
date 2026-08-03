@@ -12,7 +12,7 @@ import type {
 const base = "/v1/companies";
 
 export const companiesApi = {
-  /** Public — creates company + admin user. */
+  /** Público — cria empresa + usuário administrador. */
   signup: (body: SignUpRequest) =>
     apiClient.post<SignUpResponse>(`${base}/signup`, body),
   list: (params?: ListParams, signal?: AbortSignal) =>

@@ -95,8 +95,8 @@ function ConfigPage() {
     });
   };
 
-  // Company form, seeded from the fetched company. `document` is read-only
-  // (the backend does not allow updating it).
+  // Formulário da empresa, populado a partir da empresa buscada. `document` é
+  // somente leitura (o backend não permite atualizá-lo).
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -129,8 +129,8 @@ function ConfigPage() {
     });
   };
 
-  // Nothing to save while the company is loading, or when the form still
-  // matches what is persisted.
+  // Nada para salvar enquanto a empresa está carregando, ou quando o formulário
+  // ainda coincide com o que está persistido.
   const isDirty =
     company != null &&
     (name !== company.name ||

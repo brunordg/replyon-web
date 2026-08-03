@@ -4,21 +4,22 @@ import type { CreateTimeBlockRequest, TimeBlockResponse, UpdateTimeBlockRequest 
 
 const KEY = "timeblocks";
 
-/** The block itself, without the professional it belongs to. */
+/** O próprio bloqueio, sem o profissional a quem pertence. */
 export type TimeBlockDraft = Omit<CreateTimeBlockRequest, "staffId">;
 
-/** Inclusive "YYYY-MM-DD" bounds; the backend applies them. */
+/** Limites "YYYY-MM-DD" inclusivos; o backend os aplica. */
 export interface TimeBlockRange {
   startDate?: string;
   endDate?: string;
 }
 
 /**
- * Aggregates time blocks across every staff member (no tenant-wide endpoint).
+ * Agrega bloqueios de horário de todos os profissionais (sem endpoint
+ * abrangendo todo o tenant).
  *
- * The range is passed through to the API rather than filtered here — the server
- * is what knows that a recurring block anchored before the window still occurs
- * inside it, and filtering client-side would drop exactly those.
+ * O intervalo é repassado à API em vez de filtrado aqui — é o servidor quem
+ * sabe que um bloqueio recorrente ancorado antes da janela ainda ocorre
+ * dentro dela, e filtrar no client descartaria exatamente esses.
  */
 export function useAllTimeBlocks(staffIds: number[], range: TimeBlockRange = {}, size = 100) {
   const { startDate, endDate } = range;
@@ -34,9 +35,9 @@ export function useAllTimeBlocks(staffIds: number[], range: TimeBlockRange = {},
 
   const blocks: TimeBlockResponse[] = results.flatMap((r) => r.data?.timeBlocks ?? []);
 
-  // Same rule as the availability fan-out: one unreachable professional must not
-  // hide everyone else's blocks. Loading means nothing arrived; error means
-  // everything failed.
+  // Mesma regra do fan-out de disponibilidade: um profissional inalcançável
+  // não pode esconder os bloqueios de todos os outros. Loading significa que
+  // nada chegou; error significa que tudo falhou.
   const hasAny = results.some((r) => r.data);
   return {
     blocks,
@@ -48,14 +49,15 @@ export function useAllTimeBlocks(staffIds: number[], range: TimeBlockRange = {},
 }
 
 /**
- * Creates the same block for one or more professionals.
+ * Cria o mesmo bloqueio para um ou mais profissionais.
  *
- * "Todos" is a frontend convenience, not a backend concept — `TimeBlock` always
- * belongs to exactly one staff member. So the dialog fans out one create per
- * professional and the listing regroups the siblings back into a single card.
+ * "Todos" é uma conveniência do frontend, não um conceito do backend —
+ * `TimeBlock` sempre pertence a exatamente um profissional. Então o diálogo
+ * faz fan-out de uma criação por profissional e a listagem reagrupa os
+ * irmãos de volta num único card.
  *
- * `allSettled` on purpose: with ten professionals, one failure should not
- * discard the nine blocks that were created.
+ * `allSettled` de propósito: com dez profissionais, uma falha não deveria
+ * descartar os nove bloqueios que foram criados.
  */
 export function useCreateTimeBlocks() {
   const queryClient = useQueryClient();
@@ -75,7 +77,7 @@ export function useCreateTimeBlocks() {
   });
 }
 
-/** Applies one edit to every sibling of a grouped block. */
+/** Aplica uma edição a cada irmão de um bloqueio agrupado. */
 export function useUpdateTimeBlocks() {
   const queryClient = useQueryClient();
 
@@ -93,7 +95,7 @@ export function useUpdateTimeBlocks() {
   });
 }
 
-/** Removes every sibling of a grouped block. */
+/** Remove cada irmão de um bloqueio agrupado. */
 export function useDeleteTimeBlocks() {
   const queryClient = useQueryClient();
 

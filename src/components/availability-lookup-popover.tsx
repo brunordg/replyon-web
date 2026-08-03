@@ -15,7 +15,7 @@ import { useCreateAppointmentWithStatus } from "@/lib/api/hooks/appointments";
 import { useCreateCustomerForConversation } from "@/lib/api/hooks/conversations";
 import { formatLongDate, toDateParam, toLocalDateTime } from "@/lib/appointment-slots";
 
-/** Midnight today — the earliest queryable day, mirrors NovoAgendamentoDialog. */
+/** Meia-noite de hoje — o dia mais antigo consultável, espelha o NovoAgendamentoDialog. */
 function today(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -23,12 +23,13 @@ function today(): Date {
 }
 
 /**
- * Availability lookup for the human-handoff thread: pick a service, optionally
- * a professional, and a day, see the available start times. Staff can either
- * insert a ready-to-edit summary into the reply composer (relay to the
- * customer, nothing created), or select one time and confirm a real booking
- * for it — registering a customer by name first if the conversation has none
- * yet. Never touches NovoAgendamentoDialog's own flow.
+ * Consulta de disponibilidade para a conversa em atendimento humano: escolha um
+ * serviço, opcionalmente um profissional, e um dia, para ver os horários de início
+ * disponíveis. O atendente pode inserir um resumo pronto para edição no compositor
+ * de resposta (repassar ao cliente, sem criar nada), ou selecionar um horário e
+ * confirmar um agendamento real para ele — cadastrando um cliente pelo nome antes,
+ * caso a conversa ainda não tenha um. Nunca interfere no próprio fluxo do
+ * NovoAgendamentoDialog.
  */
 export function AvailabilityLookupPopover({
   phone,
@@ -50,8 +51,8 @@ export function AvailabilityLookupPopover({
   const createAppointment = useCreateAppointmentWithStatus();
   const createCustomer = useCreateCustomerForConversation(phone);
 
-  // Gated by `open` (react-query's `enabled`) so nothing fetches until staff
-  // actually opens the popover — same lazy pattern NovoAgendamentoDialog uses.
+  // Condicionado por `open` (o `enabled` do react-query) para que nada seja buscado
+  // até o atendente realmente abrir o popover — o mesmo padrão preguiçoso usado pelo NovoAgendamentoDialog.
   const servicesQuery = useServices({ size: 200 });
   const staffQuery = useStaffList({ size: 200 });
 
@@ -95,14 +96,14 @@ export function AvailabilityLookupPopover({
 
   const service = allServices.find((s) => String(s.id) === serviceId);
   const needsService = !serviceId;
-  // Booking a specific slot only makes sense with exactly one time picked —
-  // with several selected, staff are still just building a message to relay.
+  // Agendar um horário específico só faz sentido com exatamente um horário escolhido —
+  // com vários selecionados, o atendente ainda está apenas montando uma mensagem para repassar.
   const singleSelectedTime = selectedTimes.size === 1 ? [...selectedTimes][0] : null;
 
   function handleServiceChange(value: string) {
     setServiceId(value);
-    // A professional qualified for the old service may not be for the new
-    // one — clearing avoids silently querying an invalid pairing.
+    // Um profissional habilitado para o serviço antigo pode não estar habilitado
+    // para o novo — limpar evita consultar silenciosamente uma combinação inválida.
     setStaffId("");
     setSelectedTimes(new Set());
   }
@@ -157,8 +158,8 @@ export function AvailabilityLookupPopover({
         const customer = await createCustomer.mutateAsync(customerName.trim());
         resolvedCustomerId = customer.id;
       } catch {
-        // Toast already shown by the mutation itself; keep the selection so
-        // staff can just retry instead of starting over.
+        // O toast já foi exibido pela própria mutation; mantém a seleção para
+        // que o atendente possa apenas tentar de novo em vez de recomeçar.
         return;
       }
     }

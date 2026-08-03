@@ -24,9 +24,9 @@ const Command = React.forwardRef<
 Command.displayName = CommandPrimitive.displayName;
 
 /**
- * `shouldFilter` is forwarded to the inner Command: with server-side search it
- * must be false, otherwise cmdk re-filters the results against the raw input and
- * hides legitimate hits while the debounce is still catching up.
+ * `shouldFilter` é repassado ao Command interno: com busca no servidor ele
+ * precisa ser false, do contrário o cmdk refiltra os resultados contra o input
+ * bruto e esconde acertos legítimos enquanto o debounce ainda está alcançando.
  */
 const CommandDialog = ({
   children,

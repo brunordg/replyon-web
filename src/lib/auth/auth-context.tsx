@@ -24,7 +24,7 @@ interface AuthContextValue {
   token: string | null;
   user: AuthUser | null;
   isAuthenticated: boolean;
-  /** True until the token is hydrated from storage on the client. */
+  /** True até que o token seja hidratado a partir do storage no cliente. */
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -61,7 +61,7 @@ function userFromToken(token: string | null): AuthUser | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Avoid re-running the logout side effects redundantly.
+  // Evita reexecutar os efeitos colaterais de logout redundantemente.
   const tokenRef = useRef<string | null>(null);
 
   const applyToken = useCallback((next: string | null) => {
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyToken(null);
   }, [applyToken]);
 
-  // Hydrate from storage on the client after mount.
+  // Hidrata a partir do storage no cliente após a montagem.
   useEffect(() => {
     applyToken(readStoredToken());
     setIsLoading(false);

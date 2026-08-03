@@ -28,7 +28,7 @@ import {
 } from "@/lib/schedule-week";
 import { cn } from "@/lib/utils";
 
-/** Presets offered by "Aplicar modelo". */
+/** Predefinições oferecidas por "Aplicar modelo". */
 const TEMPLATES: { label: string; hint: string; build: () => WeekState }[] = [
   {
     label: "Comercial com almoço",
@@ -90,8 +90,8 @@ export function HorariosSemanais({
   }
 
   function addWindow(day: ScheduleDay) {
-    // Start the new window where the day currently ends, capped so it stays
-    // inside the same day.
+    // Começa a nova janela onde o dia atualmente termina, limitada para que
+    // permaneça dentro do mesmo dia.
     const last = week[day].windows[week[day].windows.length - 1];
     const startMin = last && Number.isFinite(minutes(last.end)) ? minutes(last.end) : 9 * 60;
     const start = Math.min(startMin, 23 * 60);
@@ -103,7 +103,7 @@ export function HorariosSemanais({
 
   function removeWindow(day: ScheduleDay, id: string) {
     const remaining = week[day].windows.filter((w) => w.id !== id);
-    // Removing the last window closes the day rather than leaving it empty.
+    // Remover a última janela fecha o dia em vez de deixá-lo vazio.
     if (remaining.length === 0) {
       onChange({ ...week, [day]: { enabled: false, windows: [makeWindow("09:00", "18:00")] } });
       return;
@@ -111,7 +111,7 @@ export function HorariosSemanais({
     patchDay(day, { windows: remaining });
   }
 
-  /** Copies one day's enabled state and windows onto the given targets. */
+  /** Copia o estado habilitado e as janelas de um dia para os alvos informados. */
   function copyTo(source: ScheduleDay, targets: ScheduleDay[]) {
     const src = week[source];
     const next = { ...week };

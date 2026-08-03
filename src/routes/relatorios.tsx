@@ -18,8 +18,8 @@ import {
 } from "@/lib/api/status";
 import type { AppointmentOrigin, AppointmentResponse, PaymentMethod } from "@/lib/api/types";
 
-// Fixed, semantic palette reused from the app's existing status colors —
-// keeps the new pie chart visually consistent instead of inventing new hues.
+// Paleta fixa e semântica reaproveitada das cores de status já existentes no
+// app — mantém o novo gráfico de pizza visualmente consistente em vez de inventar novos tons.
 const PAYMENT_METHOD_COLOR: Record<PaymentMethod, string> = {
   CASH: "#18A05E",
   PIX: "#2748D9",
@@ -34,8 +34,8 @@ const PAYMENT_METHOD_CHART_CONFIG: ChartConfig = {
   DEBIT_CARD: { label: PAYMENT_METHOD_LABEL.DEBIT_CARD, color: PAYMENT_METHOD_COLOR.DEBIT_CARD },
 };
 
-// WhatsApp keeps its brand green for instant recognition; manual bookings get
-// a neutral tone so it doesn't compete with the payment palette above.
+// O WhatsApp mantém seu verde de marca para reconhecimento instantâneo; agendamentos
+// manuais recebem um tom neutro para não competir com a paleta de pagamento acima.
 const ORIGIN_COLOR: Record<AppointmentOrigin, string> = {
   WHATSAPP: "#25D366",
   MANUAL: "#64748B",
@@ -59,14 +59,14 @@ export const Route = createFileRoute("/relatorios")({
 const isRealized = (a: AppointmentResponse) =>
   a.status !== "CANCELLED" && a.status !== "NO_SHOW";
 
-/** Money actually received — only a completed appointment has a frozen amount charged. */
+/** Dinheiro efetivamente recebido — apenas um agendamento concluído tem um valor cobrado congelado. */
 const isCompleted = (a: AppointmentResponse) => a.status === "COMPLETED";
 
 /**
- * "Top serviços" reads as popularity/projection, not cash received: it keeps
- * the live service price, but a still-PENDING appointment isn't confirmed
- * business yet, so it's excluded here too (same principle as the Home's
- * revenue projection).
+ * "Top serviços" se lê como popularidade/projeção, não como dinheiro recebido:
+ * ele mantém o preço atual do serviço, mas um agendamento ainda PENDING não é
+ * negócio confirmado, então também é excluído aqui (mesmo princípio da
+ * projeção de faturamento da Home).
  */
 const countsForTopServices = (a: AppointmentResponse) =>
   a.status === "CONFIRMED" || a.status === "COMPLETED";
@@ -84,7 +84,7 @@ function RelatoriosPage() {
   );
   const priceOf = (id: number) => serviceMap.get(id)?.price ?? 0;
 
-  // Revenue per month for the last 6 months.
+  // Faturamento por mês nos últimos 6 meses.
   const months = useMemo(() => {
     const now = new Date();
     const buckets: { key: string; m: string; v: number }[] = [];
@@ -98,7 +98,7 @@ function RelatoriosPage() {
     }
     const byKey = new Map(buckets.map((b) => [b.key, b]));
     for (const a of appointments) {
-      // Real money received, frozen at completion time — not the live service price.
+      // Dinheiro real recebido, congelado no momento da conclusão — não o preço atual do serviço.
       if (!isCompleted(a)) continue;
       const bucket = byKey.get(a.appointmentDateTime.slice(0, 7));
       if (bucket) bucket.v += a.amountCharged ?? 0;
@@ -108,8 +108,8 @@ function RelatoriosPage() {
   }, [appointments]);
   const maxMonth = Math.max(1, ...months.map((x) => x.v));
 
-  // Top services by confirmed/completed appointment count (live price — this
-  // reads as popularity, not cash received).
+  // Top serviços por quantidade de agendamentos confirmados/concluídos (preço
+  // atual — isso se lê como popularidade, não como dinheiro recebido).
   const top = useMemo(() => {
     const agg = new Map<number, { count: number; revenue: number }>();
     for (const a of appointments) {
@@ -126,8 +126,8 @@ function RelatoriosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments, serviceMap]);
 
-  // Current-month revenue by payment method — same COMPLETED + amountCharged
-  // basis as the monthly chart, just grouped differently.
+  // Faturamento do mês atual por forma de pagamento — mesma base COMPLETED +
+  // amountCharged do gráfico mensal, apenas agrupada de forma diferente.
   const byPaymentMethod = useMemo(() => {
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -145,8 +145,8 @@ function RelatoriosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments]);
 
-  // Current-month booking channel split — same isRealized basis as the
-  // "Atendimentos (mês)" KPI, so the two segments sum to that count.
+  // Divisão do canal de agendamento do mês atual — mesma base isRealized do
+  // KPI "Atendimentos (mês)", então os dois segmentos somam essa contagem.
   const byOrigin = useMemo(() => {
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -164,7 +164,7 @@ function RelatoriosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments]);
 
-  // Current-month KPIs.
+  // KPIs do mês atual.
   const kpis = useMemo(() => {
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;

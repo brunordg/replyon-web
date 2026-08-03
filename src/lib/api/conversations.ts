@@ -4,26 +4,26 @@ import type { ConversationMessageResponse, CustomerResponse, HandoffConversation
 const base = "/v1/conversations";
 
 export const conversationsApi = {
-  /** Conversations currently awaiting/in a human handoff for the current tenant. */
+  /** Conversas atualmente aguardando/em handoff humano para o tenant atual. */
   listOpenHandoffs: (signal?: AbortSignal) =>
     apiClient.get<HandoffConversationResponse[]>(base, { status: "handoff" }, signal),
 
-  /** Full persisted message thread for one conversation. */
+  /** Thread completa de mensagens persistidas de uma conversa. */
   getThread: (phone: string, signal?: AbortSignal) =>
     apiClient.get<ConversationMessageResponse[]>(`${base}/${encodeURIComponent(phone)}/messages`, undefined, signal),
 
-  /** Sends a reply as a human, delivered through WAHA and renews the handoff window. */
+  /** Envia uma resposta como humano, entregue via WAHA, e renova a janela de handoff. */
   sendReply: (phone: string, body: string) =>
     apiClient.post<ConversationMessageResponse>(`${base}/${encodeURIComponent(phone)}/messages`, { body }),
 
-  /** Manually ends the handoff ("encerrar atendimento"), resuming the bot. */
+  /** Encerra manualmente o handoff ("encerrar atendimento"), retomando o bot. */
   resolveHandoff: (phone: string) =>
     apiClient.post<void>(`${base}/${encodeURIComponent(phone)}/resolve`),
 
   /**
-   * Registers a customer for this conversation's phone using only a name —
-   * for booking inline when the conversation has no linked customer yet.
-   * Idempotent: the backend returns the existing customer if one now matches.
+   * Registra um cliente para o telefone desta conversa usando apenas um nome
+   * — para agendamento inline quando a conversa ainda não tem cliente vinculado.
+   * Idempotente: o backend retorna o cliente existente se algum já combinar.
    */
   createCustomer: (phone: string, name: string) =>
     apiClient.post<CustomerResponse>(`${base}/${encodeURIComponent(phone)}/customer`, { name }),

@@ -13,15 +13,15 @@ export interface StaffFilterProps {
   staff: StaffResponse[];
   selected: Set<number>;
   onChange: (next: Set<number>) => void;
-  /** Caps simultaneous selections (e.g. a calendar's column limit). Omit for no limit. */
+  /** Limita seleções simultâneas (ex.: o limite de colunas de um calendário). Omita para sem limite. */
   max?: number;
-  /** Shown above the list when `max` is set, explaining why the cap exists. */
+  /** Exibido acima da lista quando `max` está definido, explicando por que o limite existe. */
   capLabel?: string;
 }
 
 /**
- * Multi-select for professionals. An empty selection means "everyone" — callers
- * decide what that implies for their own view.
+ * Seleção múltipla de profissionais. Uma seleção vazia significa "todos" — quem
+ * usa este componente decide o que isso implica para sua própria visão.
  */
 export function StaffFilter({ staff, selected, onChange, max, capLabel }: StaffFilterProps) {
   const atLimit = max != null && selected.size >= max;
@@ -68,8 +68,8 @@ export function StaffFilter({ staff, selected, onChange, max, capLabel }: StaffF
               <DropdownMenuCheckboxItem
                 key={s.id}
                 checked={checked}
-                // Blocking the unchecked ones at the cap makes the limit obvious
-                // without silently dropping a pick the user just made.
+                // Bloquear os não marcados ao atingir o limite deixa a restrição óbvia
+                // sem descartar silenciosamente uma escolha que o usuário acabou de fazer.
                 disabled={!checked && atLimit}
                 onSelect={(e) => e.preventDefault()}
                 onCheckedChange={() => toggle(s.id)}

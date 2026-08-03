@@ -1,4 +1,4 @@
-/** Validates a CPF, including check digits. Accepts masked or unmasked input. */
+/** Valida um CPF, incluindo os dígitos verificadores. Aceita entrada com ou sem máscara. */
 export function isValidCPF(value: string): boolean {
   const cpf = value.replace(/\D/g, "");
   if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
@@ -16,7 +16,7 @@ export function isValidCPF(value: string): boolean {
   return checkDigit2 === Number(cpf[10]);
 }
 
-/** Validates a CNPJ, including check digits. Accepts masked or unmasked input. */
+/** Valida um CNPJ, incluindo os dígitos verificadores. Aceita entrada com ou sem máscara. */
 export function isValidCNPJ(value: string): boolean {
   const cnpj = value.replace(/\D/g, "");
   if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
@@ -36,7 +36,7 @@ export function isValidCNPJ(value: string): boolean {
   return digit1 === Number(cnpj[12]) && digit2 === Number(cnpj[13]);
 }
 
-/** Validates a CPF (11 digits) or CNPJ (14 digits), picking the check by length. */
+/** Valida um CPF (11 dígitos) ou CNPJ (14 dígitos), escolhendo a verificação pelo tamanho. */
 export function isValidDocument(value: string): boolean {
   const digits = value.replace(/\D/g, "");
   if (digits.length === 11) return isValidCPF(digits);
@@ -44,7 +44,7 @@ export function isValidDocument(value: string): boolean {
   return false;
 }
 
-/** Validates a Brazilian cell phone: 11 digits, valid DDD, "9" as the first digit of the local number. */
+/** Valida um celular brasileiro: 11 dígitos, DDD válido, "9" como primeiro dígito do número local. */
 export function isValidPhone(value: string): boolean {
   const digits = value.replace(/\D/g, "");
   if (digits.length !== 11) return false;

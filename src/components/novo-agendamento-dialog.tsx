@@ -52,9 +52,10 @@ import { cn, colorFromString, formatBRL } from "@/lib/utils";
 import { maskPhone } from "@/lib/masks";
 
 /**
- * Radix rejects an empty string as a SelectItem value (it reserves "" for the
- * placeholder), so the "clear" entry carries a sentinel that `clearable` maps
- * back to "" — which is what puts the placeholder back on the trigger.
+ * O Radix rejeita uma string vazia como valor de SelectItem (ele reserva "" para
+ * o placeholder), então a opção de "limpar" carrega um valor sentinela que
+ * `clearable` converte de volta para "" — o que traz o placeholder de volta ao
+ * gatilho.
  */
 const CLEAR = "__clear__";
 
@@ -62,7 +63,7 @@ function clearable(setter: (value: string) => void) {
   return (value: string) => setter(value === CLEAR ? "" : value);
 }
 
-/** Rendered only when the select has a value — there is nothing to clear otherwise. */
+/** Renderizado apenas quando o select tem um valor — do contrário não há nada a limpar. */
 function ClearOption() {
   return (
     <>
@@ -74,7 +75,7 @@ function ClearOption() {
   );
 }
 
-/** Midnight today — the earliest bookable day. */
+/** Meia-noite de hoje — o dia mais antigo agendável. */
 function today(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -83,19 +84,19 @@ function today(): Date {
 
 export interface NovoAgendamentoDialogProps {
   /**
-   * Books for this client from the start. It stays editable — the dialog is the
-   * same one either way, and locking the field would only surprise someone who
-   * opened it from the wrong row.
+   * Agenda para este cliente desde o início. O campo continua editável — o
+   * diálogo é o mesmo de qualquer forma, e travar o campo só surpreenderia
+   * alguém que o abriu a partir da linha errada.
    */
   customer?: { id: number; name: string };
-  /** Replaces the default "Novo agendamento" button. */
+  /** Substitui o botão padrão "Novo agendamento". */
   trigger?: React.ReactNode;
 }
 
 export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDialogProps = {}) {
   const [open, setOpen] = useState(false);
   const [customerId, setCustomerId] = useState<string>(customer ? String(customer.id) : "");
-  /** Kept so the trigger keeps showing the chosen client after the list moves on. */
+  /** Mantido para que o gatilho continue mostrando o cliente escolhido depois que a lista avança. */
   const [customerLabel, setCustomerLabel] = useState<string>(customer?.name ?? "");
   const [customerQuery, setCustomerQuery] = useState<string>("");
   const [serviceId, setServiceId] = useState<string>("");
@@ -107,11 +108,11 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
   const [dateOpen, setDateOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Customer search runs on the server. The old `size: 200` silently truncated:
-  // a shop with more than 200 clients simply could not book the rest of them.
+  // A busca de clientes roda no servidor. O antigo `size: 200` truncava silenciosamente:
+  // um negócio com mais de 200 clientes simplesmente não conseguia agendar os demais.
   const customerSearch = useDebouncedValue(customerQuery).trim();
-  // ACTIVE goes to the server too: filtering it here would let inactive clients
-  // eat slots out of the 20 rows that came back.
+  // ACTIVE também vai para o servidor: filtrar aqui deixaria clientes inativos
+  // ocupando vagas das 20 linhas retornadas.
   const customersQuery = useCustomers({
     size: 20,
     name: customerSearch || undefined,
@@ -136,14 +137,14 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
     open && staffIds.length > 0,
   );
 
-  // Business rule: a professional may only be booked for services assigned to
-  // them — a barber with only "Corte" must not be offered "Manicure". The
-  // filtering runs both ways so the two selects stay consistent whichever the
-  // user picks first.
+  // Regra de negócio: um profissional só pode ser agendado para serviços
+  // atribuídos a ele — um barbeiro com apenas "Corte" não deve receber a opção
+  // "Manicure". A filtragem funciona nos dois sentidos para que os dois selects
+  // permaneçam consistentes qualquer que seja a ordem de escolha do usuário.
   //
-  // While the assignments are still loading we deliberately show the unfiltered
-  // lists rather than an empty select; the effect below drops any now-invalid
-  // pair once the real data lands.
+  // Enquanto as atribuições ainda estão carregando, mostramos deliberadamente
+  // as listas sem filtro em vez de um select vazio; o efeito abaixo descarta
+  // qualquer combinação agora inválida assim que os dados reais chegam.
   const services = useMemo(() => {
     if (!staffId || assignmentsLoading) return allServices;
     const assigned = byStaffId.get(Number(staffId));
@@ -151,15 +152,15 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
     return allServices.filter((s) => assigned.includes(s.id));
   }, [allServices, staffId, byStaffId, assignmentsLoading]);
 
-  /** Staff qualified for the chosen service — before availability is considered. */
+  /** Profissionais habilitados para o serviço escolhido — antes de considerar a disponibilidade. */
   const serviceStaff = useMemo(() => {
     if (!serviceId || assignmentsLoading) return allStaff;
     return allStaff.filter((s) => byStaffId.get(s.id)?.includes(Number(serviceId)));
   }, [allStaff, serviceId, byStaffId, assignmentsLoading]);
 
-  // Clearing the *service* (not the staff) is the right direction: picking a
-  // professional is the more deliberate choice, and it keeps the two selects
-  // from clearing each other in a loop.
+  // Limpar o *serviço* (não o profissional) é a direção correta: escolher um
+  // profissional é a decisão mais deliberada, e isso evita que os dois selects
+  // se limpem mutuamente em um loop.
   useEffect(() => {
     if (!staffId || !serviceId || assignmentsLoading) return;
     const assigned = byStaffId.get(Number(staffId));
@@ -168,10 +169,10 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
 
   const service = allServices.find((s) => String(s.id) === serviceId);
 
-  // Availability is fanned out over every professional qualified for the service,
-  // so the time select works without a professional chosen: the options are the
-  // union of everyone's free starts, and picking one narrows the professional
-  // list to whoever is actually free then.
+  // A disponibilidade é distribuída entre todos os profissionais habilitados para
+  // o serviço, então o select de horário funciona sem um profissional escolhido:
+  // as opções são a união dos horários livres de todos, e escolher um deles
+  // restringe a lista de profissionais a quem está realmente livre naquele momento.
   const serviceStaffIds = useMemo(() => serviceStaff.map((s) => s.id), [serviceStaff]);
   const {
     slotsByStaff,
@@ -186,15 +187,16 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
     open,
   );
 
-  // Only starts where the whole service fits — the backend excludes any start
-  // without enough consecutive free slots for `serviceDurationMinutes`.
-  // Narrowed to one professional's own slots once they are chosen.
+  // Apenas horários de início onde o serviço inteiro cabe — o backend exclui
+  // qualquer início sem slots livres consecutivos suficientes para
+  // `serviceDurationMinutes`. Restringido aos próprios horários de um
+  // profissional assim que ele é escolhido.
   const slots = useMemo(
     () => (staffId ? (slotsByStaff.get(Number(staffId)) ?? []) : allSlots),
     [staffId, slotsByStaff, allSlots],
   );
 
-  /** Qualified staff, further narrowed to those free at the chosen time. */
+  /** Profissionais habilitados, restringidos ainda mais aos livres no horário escolhido. */
   const staff = useMemo(() => {
     if (!time || slotsLoading) return serviceStaff;
     return serviceStaff.filter((s) => slotsByStaff.get(s.id)?.includes(time));
@@ -202,14 +204,15 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
 
   const staffHasNoServices = !!staffId && !assignmentsLoading && services.length === 0;
   const noStaffForService = !!serviceId && !assignmentsLoading && serviceStaff.length === 0;
-  /** Chosen time that nobody qualified can actually take. */
+  /** Horário escolhido que nenhum profissional habilitado consegue realmente atender. */
   const noStaffAtTime = !!serviceId && !!time && !slotsLoading && !slotsError && staff.length === 0;
 
   const durationMinutes = serviceDurationMinutes ?? service?.durationMinutes ?? 0;
 
-  // Grid granularity must come from ONE professional's slots. The union of
-  // several can show a gap no real grid has — staff A on 09:00/10:00 and staff B
-  // on 09:30/10:30 would look like a 30-min grid when both run on 60.
+  // A granularidade da grade deve vir dos slots de UM único profissional. A união
+  // de vários pode mostrar um espaçamento que nenhuma grade real tem — profissional
+  // A às 09:00/10:00 e profissional B às 09:30/10:30 pareceria uma grade de 30 min
+  // quando ambos operam em ciclos de 60.
   const gridSlots = useMemo(() => {
     if (staffId) return slotsByStaff.get(Number(staffId)) ?? [];
     for (const times of slotsByStaff.values()) if (times.length > 1) return times;
@@ -218,8 +221,8 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
   const slotMinutes = useMemo(() => detectSlotMinutes(gridSlots), [gridSlots]);
   const required = slotsRequired(durationMinutes, slotMinutes);
 
-  // The selected time can go stale when the service, staff or date changes and
-  // the new slot list no longer offers it.
+  // O horário selecionado pode ficar desatualizado quando o serviço, o profissional
+  // ou a data mudam e a nova lista de horários não o oferece mais.
   useEffect(() => {
     if (slotsLoading) return;
     if (time && !slots.includes(time)) setTime("");
@@ -227,12 +230,12 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
 
   const create = useCreateAppointmentWithStatus();
 
-  /** The time select only needs a service — the professional can come after. */
+  /** O select de horário só precisa de um serviço — o profissional pode vir depois. */
   const needsSelection = !serviceId;
 
   function reset() {
-    // Back to the client this dialog belongs to, not to blank: reopening it
-    // from the same row must not lose the row it was opened from.
+    // Volta para o cliente ao qual este diálogo pertence, não para vazio: reabri-lo
+    // a partir da mesma linha não deve perder a linha de onde ele foi aberto.
     setCustomerId(customer ? String(customer.id) : "");
     setCustomerLabel(customer?.name ?? "");
     setCustomerQuery("");
@@ -256,8 +259,8 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
       setError("Selecione cliente, serviço, profissional e horário.");
       return;
     }
-    // Defense in depth: the selects already exclude unassigned pairs, but a
-    // stale assignment fetch shouldn't be able to produce an invalid booking.
+    // Defesa em profundidade: os selects já excluem combinações não atribuídas, mas
+    // uma busca de atribuições desatualizada não deveria conseguir gerar um agendamento inválido.
     const assigned = byStaffId.get(Number(staffId));
     if (assigned && !assigned.includes(Number(serviceId))) {
       setError("Este profissional não atende o serviço selecionado.");
@@ -355,10 +358,10 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
             </Field>
 
             <Field icon={Users} label="Profissional">
-              {/* Local filtering on purpose: `staff` is already narrowed to who
-                  performs the service and is free at the chosen time. Searching
-                  the server here would hand back professionals who cannot take
-                  this booking. */}
+              {/* Filtragem local intencional: `staff` já está restringido a quem
+                  realiza o serviço e está livre no horário escolhido. Buscar no
+                  servidor aqui devolveria profissionais que não podem atender
+                  este agendamento. */}
               <Combobox
                 value={staffId}
                 onChange={setStaffId}
@@ -447,10 +450,10 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
             </Field>
           </div>
 
-          {/* Duration, end time and price of the chosen service. Shows as soon as
-              a service is picked; the end time fills in once a start is chosen.
-              "Ocupa" spells out the grid cost, so a 70-min service taking
-              3×30-min slots isn't a surprise. */}
+          {/* Duração, horário de término e preço do serviço escolhido. Aparece assim
+              que um serviço é selecionado; o horário de término é preenchido assim
+              que um início é escolhido. "Ocupa" explicita o custo em slots da grade,
+              para que um serviço de 70 min ocupando 3 slots de 30 min não seja surpresa. */}
           {service && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-ry-ink-soft">
               <Summary icon={Clock} label="Duração" value={`${durationMinutes} min`} />
@@ -472,9 +475,10 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
             </div>
           )}
 
-          {/* Who can actually take the chosen time. Listed only while no
-              professional is picked — once one is, the select already says it.
-              Each name is clickable so the list doubles as the picker. */}
+          {/* Quem realmente pode atender o horário escolhido. Listado apenas
+              enquanto nenhum profissional é selecionado — assim que um é
+              escolhido, o select já mostra isso. Cada nome é clicável, então
+              a lista também funciona como seletor. */}
           {!needsSelection && !!time && !staffId && !slotsLoading && staff.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-[11px] text-ry-ink-soft">
@@ -506,9 +510,10 @@ export function NovoAgendamentoDialog({ customer, trigger }: NovoAgendamentoDial
             </p>
           )}
 
-          {/* A staff member whose availability failed to load is left out of the
-              lists entirely, so say it — otherwise a professional silently
-              disappears and the form looks like it is just missing people. */}
+          {/* Um profissional cuja disponibilidade falhou ao carregar fica de fora
+              das listas por completo, então isso precisa ser dito — caso contrário
+              um profissional desaparece silenciosamente e o formulário parece
+              apenas estar faltando pessoas. */}
           {!needsSelection && !slotsError && unavailableCount > 0 && (
             <p className="text-[11px] text-ry-ink-soft">
               Não foi possível ler a agenda de {unavailableCount}{" "}

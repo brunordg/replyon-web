@@ -75,7 +75,7 @@ function DashboardPage() {
     return counts;
   }, [appointments]);
 
-  // Presentation only — every number and comparison below comes from the API.
+  // Apenas apresentação — todo número e comparação abaixo vem da API.
   const kpis: Kpi[] = [
     {
       label: "Agendamentos hoje",

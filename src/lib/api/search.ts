@@ -4,7 +4,7 @@ import type { GlobalSearchResponse } from "./types";
 const base = "/v1/search";
 
 export const searchApi = {
-  /** Customers, staff and services matching `q`, capped per type by the API. */
+  /** Clientes, profissionais e serviços que combinam com `q`, limitados por tipo pela API. */
   global: (q: string, limit?: number, signal?: AbortSignal) =>
     apiClient.get<GlobalSearchResponse>(base, { q, limit }, signal),
 };

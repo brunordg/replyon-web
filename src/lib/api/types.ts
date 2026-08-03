@@ -1,17 +1,17 @@
-// TypeScript mirrors of the replyon-api DTOs.
-// Source of truth: com.codeteam.replyonapi.adapters.in.web.* records.
-// IDs are Long -> number. Timestamps are LocalDateTime ISO strings without offset
-// (e.g. "2026-07-17T14:30:00"). Status fields serialize as the enum name string.
+// Espelhos em TypeScript dos DTOs do replyon-api.
+// Fonte da verdade: os records com.codeteam.replyonapi.adapters.in.web.*.
+// IDs são Long -> number. Timestamps são strings ISO de LocalDateTime sem offset
+// (ex.: "2026-07-17T14:30:00"). Campos de status serializam como a string do nome do enum.
 
 export type EntityStatus = "ACTIVE" | "INACTIVE";
 
 export type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
-/** Only ever set (non-null) once an appointment reaches COMPLETED. */
+/** Só é definido (não nulo) quando um agendamento chega em COMPLETED. */
 export type PaymentMethod = "CASH" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
 export type AppointmentOrigin = "MANUAL" | "WHATSAPP";
 
-/** Standard list wrapper used by customers/services/staff/companies (key: `content`). */
+/** Wrapper de listagem padrão usado por customers/services/staff/companies (chave: `content`). */
 export interface Page<T> {
   content: T[];
   page: number;
@@ -20,7 +20,7 @@ export interface Page<T> {
   totalPages: number;
 }
 
-/** Common query params for the paginated list endpoints. */
+/** Parâmetros de query comuns para os endpoints de listagem paginada. */
 export interface ListParams {
   page?: number;
   size?: number;
@@ -28,7 +28,7 @@ export interface ListParams {
   status?: EntityStatus;
 }
 
-// ---- Auth ----
+// ---- Autenticação ----
 export interface LoginRequest {
   email: string;
   password: string;
@@ -40,7 +40,7 @@ export interface LoginResponse {
   tenant_id: number;
 }
 
-// ---- Users ----
+// ---- Usuários ----
 export interface RegisterUserRequest {
   email: string;
   password: string;
@@ -51,7 +51,7 @@ export interface UserResponse {
   email: string;
 }
 
-// ---- Companies ----
+// ---- Empresas ----
 export interface CompanyResponse {
   id: number;
   tenantId: number;
@@ -95,7 +95,7 @@ export interface SignUpResponse {
   userEmail: string;
 }
 
-// ---- WhatsApp (WAHA connection) ----
+// ---- WhatsApp (conexão WAHA) ----
 export type WahaConnectionStatus = "DISCONNECTED" | "CONNECTING" | "CONNECTED" | "FAILED";
 
 export interface WhatsAppConnectionResponse {
@@ -106,7 +106,7 @@ export interface WhatsAppConnectionResponse {
   pairingCode: string | null;
 }
 
-// ---- Customers ----
+// ---- Clientes ----
 export interface CustomerResponse {
   id: number;
   tenantId: number;
@@ -130,7 +130,7 @@ export interface UpdateCustomerRequest {
   phone?: string;
 }
 
-// ---- Services ----
+// ---- Serviços ----
 export interface ServiceResponse {
   id: number;
   tenantId: number;
@@ -157,7 +157,7 @@ export interface UpdateServiceRequest {
   durationMinutes?: number;
 }
 
-// ---- Staff ----
+// ---- Profissionais ----
 export interface StaffResponse {
   id: number;
   tenantId: number;
@@ -184,7 +184,7 @@ export interface UpdateStaffRequest {
   specialties?: string[];
 }
 
-/** Returned by GET /services/{id}/staff and GET /staff/{id}/services. */
+/** Retornado por GET /services/{id}/staff e GET /staff/{id}/services. */
 export interface StaffServiceResponse {
   serviceIds: number[];
 }
@@ -193,7 +193,7 @@ export interface AssignServicesRequest {
   serviceIds: number[];
 }
 
-// ---- Appointments ----
+// ---- Agendamentos ----
 export interface AppointmentResponse {
   id: number;
   customerId: number;
@@ -203,16 +203,16 @@ export interface AppointmentResponse {
   endDateTime: string;
   status: AppointmentStatus;
   notes: string;
-  /** Null unless status is COMPLETED — set once, at completion time. */
+  /** Nulo a menos que o status seja COMPLETED — definido uma vez, no momento da conclusão. */
   paymentMethod: PaymentMethod | null;
-  /** Frozen from the service's price at completion time; null unless COMPLETED. */
+  /** Congelado a partir do preço do serviço no momento da conclusão; nulo a menos que COMPLETED. */
   amountCharged: number | null;
   createdAt: string;
   updatedAt: string;
   origin: AppointmentOrigin;
 }
 
-/** List wrapper for appointments (key: `appointments`, not `content`). */
+/** Wrapper de listagem para agendamentos (chave: `appointments`, não `content`). */
 export interface AppointmentPage {
   appointments: AppointmentResponse[];
   page: number;
@@ -237,8 +237,8 @@ export interface UpdateAppointmentRequest {
   notes: string;
 }
 
-// ---- Global search ----
-/** `subtitle` is composed by the API: e-mail for people, duração/preço for services. */
+// ---- Busca global ----
+/** `subtitle` é composto pela API: e-mail para pessoas, duração/preço para serviços. */
 export interface SearchHit {
   id: number;
   name: string;
@@ -252,7 +252,7 @@ export interface GlobalSearchResponse {
   services: SearchHit[];
 }
 
-// ---- Time Blocks (per staff) ----
+// ---- Bloqueios de horário (por profissional) ----
 export interface TimeBlockResponse {
   id: number;
   staffId: number;
@@ -267,7 +267,7 @@ export interface TimeBlockResponse {
   updatedAt: string;
 }
 
-/** `staffId` also travels in the path; the backend validates both. */
+/** `staffId` também trafega no path; o backend valida ambos. */
 export interface CreateTimeBlockRequest {
   staffId: number;
   type: string;
@@ -278,7 +278,7 @@ export interface CreateTimeBlockRequest {
   recurrencePattern?: string;
 }
 
-/** Every field is optional — the backend only applies what is sent. */
+/** Todo campo é opcional — o backend só aplica o que é enviado. */
 export type UpdateTimeBlockRequest = Partial<Omit<CreateTimeBlockRequest, "staffId">>;
 
 export interface TimeBlockPage {
@@ -289,14 +289,14 @@ export interface TimeBlockPage {
   totalPages: number;
 }
 
-// ---- Schedules (per staff) ----
-// A schedule is a flat list of working windows; a day carries as many windows
-// as needed (e.g. 09:00–12:00 + 13:00–18:00 around lunch) and days with no
-// window are simply absent. LocalTime serializes as "HH:mm:ss". The backend
-// enforces one schedule per (staffId, tenantId) via a unique constraint, so the
-// list endpoint returns either zero or one item.
+// ---- Agendas (por profissional) ----
+// Uma agenda é uma lista plana de janelas de trabalho; um dia carrega quantas
+// janelas forem necessárias (ex.: 09:00–12:00 + 13:00–18:00 ao redor do almoço)
+// e dias sem janela simplesmente ficam ausentes. LocalTime serializa como
+// "HH:mm:ss". O backend impõe uma agenda por (staffId, tenantId) via restrição
+// de unicidade, então o endpoint de listagem retorna zero ou um item.
 
-/** UI-side weekday keys, in display order. */
+/** Chaves de dia da semana do lado da UI, na ordem de exibição. */
 export const SCHEDULE_DAYS = [
   "monday",
   "tuesday",
@@ -309,11 +309,11 @@ export const SCHEDULE_DAYS = [
 
 export type ScheduleDay = (typeof SCHEDULE_DAYS)[number];
 
-/** java.time.DayOfWeek, serialized as the enum name. */
+/** java.time.DayOfWeek, serializado como o nome do enum. */
 export type ApiDayOfWeek =
   "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
 
-/** `SCHEDULE_DAYS` is ordered Monday-first to match `DayOfWeek`'s 1..7. */
+/** `SCHEDULE_DAYS` está ordenado começando na segunda-feira para combinar com o 1..7 de `DayOfWeek`. */
 export const API_DAY_OF_WEEK: Record<ScheduleDay, ApiDayOfWeek> = {
   monday: "MONDAY",
   tuesday: "TUESDAY",
@@ -334,7 +334,7 @@ export const SCHEDULE_DAY_BY_API: Record<ApiDayOfWeek, ScheduleDay> = {
   SUNDAY: "sunday",
 };
 
-/** One continuous working window. Times are "HH:mm:ss" on the wire. */
+/** Uma janela de trabalho contínua. Horários são "HH:mm:ss" na transmissão. */
 export interface ScheduleWindowRequest {
   dayOfWeek: ApiDayOfWeek;
   startTime: string;
@@ -346,10 +346,10 @@ export type ScheduleWindowResponse = ScheduleWindowRequest;
 export interface ScheduleResponse {
   id: number;
   staffId: number;
-  /** Returned sorted by day then start time, with overlaps already rejected. */
+  /** Retornado ordenado por dia e depois horário de início, com sobreposições já rejeitadas. */
   windows: ScheduleWindowResponse[];
   intervalBetweenAppointments: number;
-  /** Server-computed sum of every window's duration. */
+  /** Soma calculada pelo servidor da duração de cada janela. */
   weeklyMinutes: number;
   status: EntityStatus;
   createdAt: string;
@@ -367,7 +367,7 @@ export interface UpdateScheduleRequest {
   intervalBetweenAppointments: number;
 }
 
-/** List wrapper for schedules (key: `schedules`, not `content`). */
+/** Wrapper de listagem para agendas (chave: `schedules`, não `content`). */
 export interface SchedulePage {
   schedules: ScheduleResponse[];
   page: number;
@@ -376,7 +376,7 @@ export interface SchedulePage {
   totalPages: number;
 }
 
-// ---- Availability ----
+// ---- Disponibilidade ----
 export interface AvailableSlotsResponse {
   staffId: number;
   date: string; // YYYY-MM-DD
@@ -399,9 +399,10 @@ export interface DailyAgendaResponse {
 }
 
 // ---- Dashboard ----
-// Every metric carries its own previous-period comparison, computed server-side.
-// `null` on a change field means there was no baseline (previous period was
-// zero) — growth from nothing is undefined, not 100%.
+// Toda métrica carrega sua própria comparação de período anterior, calculada
+// no servidor. `null` num campo de variação significa que não havia uma base
+// de comparação (o período anterior era zero) — crescimento a partir do nada
+// é indefinido, não 100%.
 
 export interface DashboardCountMetric {
   value: number;
@@ -420,7 +421,7 @@ export interface DashboardRevenueMetric {
   changePercent: number | null;
 }
 
-/** Rates compare in percentage points, never in percent. */
+/** As taxas são comparadas em pontos percentuais, nunca em percentual. */
 export interface DashboardOccupancyMetric {
   rate: number | null;
   previousRate: number | null;
@@ -432,11 +433,11 @@ export interface DashboardMetricsResponse {
   newCustomers: DashboardNewCustomersMetric;
   expectedRevenue: DashboardRevenueMetric;
   occupancy: DashboardOccupancyMetric;
-  /** The one metric that counts what did NOT happen. */
+  /** A única métrica que conta o que NÃO aconteceu. */
   noShowsMonth: DashboardCountMetric;
 }
 
-// ---- Notifications ----
+// ---- Notificações ----
 
 /** "APPOINTMENT_CREATED" | "APPOINTMENT_CANCELLED" | "APPOINTMENT_RESCHEDULED" | "HUMAN_HANDOFF_REQUESTED" */
 export type NotificationType =
@@ -446,9 +447,10 @@ export type NotificationType =
   | "HUMAN_HANDOFF_REQUESTED";
 
 /**
- * Informational feed of WhatsApp-automated appointment events only — manual
- * dashboard actions never produce one. No read/unread state: this is not an
- * inbox, just an ambient "the bot did this" signal.
+ * Feed informativo apenas de eventos de agendamento automatizados pelo
+ * WhatsApp — ações manuais no dashboard nunca geram um. Sem estado de
+ * lido/não lido: isso não é uma caixa de entrada, apenas um sinal ambiente
+ * de "o bot fez isso".
  */
 export interface NotificationResponse {
   id: number;
@@ -458,7 +460,7 @@ export interface NotificationResponse {
   createdAt: string;
 }
 
-/** A WhatsApp conversation currently awaiting/in a human handoff. */
+/** Uma conversa do WhatsApp atualmente aguardando/em handoff humano. */
 export interface HandoffConversationResponse {
   phone: string;
   customerId: number | null;

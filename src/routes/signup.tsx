@@ -37,8 +37,8 @@ function SignupPage() {
   const [step, setStep] = useState(1);
   const [segment, setSegment] = useState<string | null>(null);
   const [showPw, setShowPw] = useState(false);
-  // Fields collected across the wizard. `name` is a personal name (cosmetic —
-  // the signup endpoint has no field for it); the rest map to SignUpRequest.
+  // Campos coletados ao longo do wizard. `name` é um nome pessoal (cosmético —
+  // o endpoint de signup não tem campo para ele); o resto mapeia para SignUpRequest.
   const [name, setName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyDocument, setCompanyDocument] = useState("");
@@ -75,7 +75,7 @@ function SignupPage() {
         adminEmail: email,
         adminPassword: password,
       });
-      // Auto-login with the just-created admin credentials.
+      // Login automático com as credenciais de admin recém-criadas.
       await login(email, password);
       navigate({ to: "/" });
     } catch (err) {
@@ -100,7 +100,7 @@ function SignupPage() {
         </div>
 
         <div className="mx-auto w-full max-w-md">
-          {/* Stepper */}
+          {/* Indicador de etapas */}
           <div className="flex items-center gap-2 mb-6">
             {[1, 2, 3].map((s) => (
               <div key={s} className="flex-1">

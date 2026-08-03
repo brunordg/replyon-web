@@ -33,7 +33,7 @@ import { addDays, dateKey } from "@/lib/agenda-range";
 import { formatLongDate } from "@/lib/appointment-slots";
 import { BLOCK_TYPES, RECURRENCE_PATTERNS, isAllDay, type BlockGroup } from "@/lib/time-blocks";
 
-/** Sentinel for "todos os profissionais" — Radix reserves "" for the placeholder. */
+/** Valor sentinela para "todos os profissionais" — o Radix reserva "" para o placeholder. */
 const ALL_STAFF = "__all__";
 
 function today(): Date {
@@ -43,11 +43,11 @@ function today(): Date {
 }
 
 export interface NovoBloqueioDialogProps {
-  /** Present when editing: the dialog pre-fills and updates every sibling. */
+  /** Presente ao editar: o diálogo é pré-preenchido e atualiza todos os itens irmãos. */
   group?: BlockGroup;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Omitted in edit mode, where the trigger is the card's "Editar" button. */
+  /** Omitido no modo de edição, onde o gatilho é o botão "Editar" do card. */
   trigger?: React.ReactNode;
 }
 
@@ -85,8 +85,8 @@ export function NovoBloqueioDialog({
   const updateBlocks = useUpdateTimeBlocks();
   const pending = createBlocks.isPending || updateBlocks.isPending;
 
-  // Re-seeds the form whenever the dialog opens. Keyed on `open` rather than run
-  // once, so reopening a card after an edit never shows the previous draft.
+  // Repopula o formulário sempre que o diálogo abre. Baseado em `open` em vez de
+  // rodar uma única vez, para que reabrir um card após uma edição nunca mostre o rascunho anterior.
   useEffect(() => {
     if (!open) return;
     setError(null);
@@ -118,9 +118,9 @@ export function NovoBloqueioDialog({
   }, [open, group]);
 
   /**
-   * A whole day is stored as midnight to the next midnight — the same half-open
-   * interval the backend uses everywhere, so a block ending at 00:00 does not
-   * bleed into the following day's first slot.
+   * Um dia inteiro é armazenado como meia-noite até a meia-noite seguinte — o
+   * mesmo intervalo semiaberto que o backend usa em todo lugar, para que um
+   * bloqueio terminando às 00:00 não invada o primeiro horário do dia seguinte.
    */
   function buildWindow(): { startDateTime: string; endDateTime: string } {
     if (allDay) {
@@ -131,7 +131,7 @@ export function NovoBloqueioDialog({
     }
     return {
       startDateTime: `${dateKey(date)}T${start}:00`,
-      // An end earlier than the start means the block runs past midnight.
+      // Um término anterior ao início significa que o bloqueio passa da meia-noite.
       endDateTime: `${dateKey(end <= start ? addDays(date, 1) : date)}T${end}:00`,
     };
   }
@@ -175,8 +175,8 @@ export function NovoBloqueioDialog({
       { staffIds, block: draft },
       {
         onSuccess: (result) => {
-          // Partial success is still success — say what did not land instead of
-          // pretending the whole thing failed.
+          // Sucesso parcial ainda é sucesso — informa o que não foi aplicado em vez
+          // de fingir que tudo falhou.
           if (result.failed > 0) {
             setError(
               `Bloqueio criado para ${result.created} de ${staffIds.length} profissionais. Tente novamente para os demais.`,
@@ -365,7 +365,7 @@ export function NovoBloqueioDialog({
   );
 }
 
-/** The page-header button; `Plus` matches the other "Novo …" actions. */
+/** O botão do cabeçalho de página; `Plus` combina com as outras ações "Novo …". */
 export function NovoBloqueioTrigger() {
   return (
     <NovoBloqueioDialog

@@ -54,7 +54,7 @@ function AgendamentosPage() {
   const [dateFromOpen, setDateFromOpen] = useState(false);
   const [dateToOpen, setDateToOpen] = useState(false);
   const [customerId, setCustomerId] = useState<string>("");
-  /** Kept so the filter trigger keeps showing the chosen client once search text moves on. */
+  /** Mantido para que o gatilho do filtro continue exibindo o cliente escolhido mesmo que o texto de busca mude. */
   const [customerLabel, setCustomerLabel] = useState<string>("");
   const [customerQuery, setCustomerQuery] = useState<string>("");
   const [selectedStaff, setSelectedStaff] = useState<Set<number>>(() => new Set());
@@ -63,9 +63,10 @@ function AgendamentosPage() {
   const customersQuery = useCustomers({ size: 200 });
   const servicesQuery = useServices({ size: 200 });
 
-  // Customer *filter* search runs on the server, same as novo-agendamento-dialog's
-  // combobox: the `size: 200` query above is only for labeling rows already on
-  // screen, and would silently hide any client past #200 from this dropdown.
+  // A busca do *filtro* de cliente roda no servidor, assim como o combobox do
+  // novo-agendamento-dialog: a query `size: 200` acima serve só para rotular
+  // linhas já exibidas em tela, e esconderia silenciosamente qualquer cliente
+  // além do #200 deste dropdown.
   const customerSearch = useDebouncedValue(customerQuery).trim();
   const customerFilterQuery = useCustomers({ size: 20, name: customerSearch || undefined });
 
@@ -118,8 +119,9 @@ function AgendamentosPage() {
     setSelectedStaff(new Set());
   }
 
-  // Filters combine with AND; the sort step always runs last so the visible
-  // rows stay most-recent-first regardless of which filters are active.
+  // Os filtros se combinam com E; a etapa de ordenação sempre roda por último
+  // para que as linhas visíveis fiquem do mais recente para o mais antigo,
+  // independentemente de quais filtros estejam ativos.
   const rows = useMemo(() => {
     const fromKey = dateKey(dateFrom);
     const toKey = dateKey(dateTo);
@@ -323,8 +325,8 @@ function AgendamentosPage() {
                               disabled={action.isPending || a.status !== "CONFIRMED"}
                               onClick={() => setCompletingId(a.id)}
                             />
-                            {/* Backend allows no-show from PENDING or CONFIRMED
-                                (Appointment.markNoShow) — same rule as complete. */}
+                            {/* O backend permite marcar falta a partir de PENDING ou CONFIRMED
+                                (Appointment.markNoShow) — mesma regra do concluir. */}
                             <ActionButton
                               title="Marcar falta"
                               icon={UserX}

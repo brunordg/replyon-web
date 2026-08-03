@@ -1,34 +1,34 @@
-// Side-by-side placement for appointments that share a time span.
+// Posicionamento lado a lado para agendamentos que compartilham um intervalo de tempo.
 //
-// Without this, two bookings at the same hour are absolutely positioned on top
-// of each other and only the last one painted is visible — the agenda silently
-// hides work. Overlapping events are split into lanes so every one stays
-// readable.
+// Sem isso, dois agendamentos no mesmo horário são posicionados de forma absoluta
+// um sobre o outro e apenas o último desenhado fica visível — a agenda esconde
+// trabalho silenciosamente. Eventos sobrepostos são divididos em faixas (lanes)
+// para que todos permaneçam legíveis.
 
 export interface Spannable {
-  /** Start in hours from midnight, e.g. 14.5 for 14:30. */
+  /** Início em horas a partir da meia-noite, ex.: 14.5 para 14:30. */
   start: number;
-  /** Length in hours. */
+  /** Duração em horas. */
   durationHours: number;
 }
 
 export interface Lane {
-  /** 0-based column index inside the overlap cluster. */
+  /** Índice da coluna (0-based) dentro do cluster de sobreposição. */
   index: number;
-  /** How many lanes the cluster needs — the divisor for the width. */
+  /** Quantas faixas o cluster precisa — o divisor da largura. */
   of: number;
 }
 
 /**
- * Assigns each item a lane within its cluster of overlapping items.
+ * Atribui a cada item uma faixa dentro do seu cluster de itens sobrepostos.
  *
- * Clusters are built transitively: A overlapping B and B overlapping C puts all
- * three in one cluster, so they share a width even when A and C do not touch.
- * That keeps columns aligned instead of items jumping width mid-cluster.
+ * Os clusters são formados transitivamente: A sobrepondo B e B sobrepondo C coloca
+ * os três em um único cluster, para que compartilhem a mesma largura mesmo quando
+ * A e C não se tocam. Isso mantém as colunas alinhadas em vez de os itens mudarem
+ * de largura no meio do cluster.
  *
- * Touching is not overlapping — an appointment ending at 16:00 and another
- * starting at 16:00 sit in the same lane, matching the backend's half-open
- * interval rule.
+ * Tocar não é sobrepor — um agendamento que termina às 16:00 e outro que começa
+ * às 16:00 ficam na mesma faixa, seguindo a regra de intervalo semiaberto do backend.
  */
 export function assignLanes<T extends Spannable>(items: T[]): Map<T, Lane> {
   const result = new Map<T, Lane>();
@@ -41,7 +41,7 @@ export function assignLanes<T extends Spannable>(items: T[]): Map<T, Lane> {
 
   const flush = () => {
     if (cluster.length === 0) return;
-    // Greedy: reuse the first lane already free at this item's start.
+    // Guloso: reaproveita a primeira faixa já livre no início deste item.
     const laneEnds: number[] = [];
     const laneOf = new Map<T, number>();
     for (const item of cluster) {
@@ -61,8 +61,8 @@ export function assignLanes<T extends Spannable>(items: T[]): Map<T, Lane> {
   };
 
   for (const item of sorted) {
-    // A gap (start >= clusterEnd) closes the cluster: nothing after it can
-    // overlap anything before it, since the list is sorted by start.
+    // Um intervalo (start >= clusterEnd) fecha o cluster: nada depois dele pode
+    // se sobrepor a algo anterior, já que a lista está ordenada por início.
     if (cluster.length > 0 && item.start >= clusterEnd) flush();
     cluster.push(item);
     clusterEnd = Math.max(clusterEnd, item.start + item.durationHours);
@@ -72,7 +72,7 @@ export function assignLanes<T extends Spannable>(items: T[]): Map<T, Lane> {
   return result;
 }
 
-/** Percent left/width for a lane, leaving a small gutter between neighbours. */
+/** Percentual left/width para uma faixa, deixando um pequeno espaçamento entre vizinhas. */
 export function laneStyle(lane: Lane | undefined): { left: string; width: string } {
   if (!lane || lane.of <= 1) return { left: "0%", width: "100%" };
   const width = 100 / lane.of;
@@ -80,29 +80,30 @@ export function laneStyle(lane: Lane | undefined): { left: string; width: string
 }
 
 /**
- * Beyond three lanes a block is under ~50px wide — narrower than a truncated
- * name — so splitting further trades one hidden appointment for several
- * illegible ones. The rest is surfaced as a "+N mais" affordance instead.
+ * Além de três faixas, um bloco fica com menos de ~50px de largura — mais estreito
+ * que um nome truncado — então dividir ainda mais troca um agendamento escondido
+ * por vários ilegíveis. O restante é exibido através de um recurso "+N mais".
  */
 export const MAX_LANES = 3;
 
-/** Five columns of 180px plus the 56px gutter fit without horizontal scrolling. */
+/** Cinco colunas de 180px mais o espaçamento de 56px cabem sem rolagem horizontal. */
 export const MAX_DAY_COLUMNS = 5;
 
 export interface LaneLayout<T> {
-  /** Only the items that fit; `of` is clamped so they still fill the column. */
+  /** Apenas os itens que cabem; `of` é limitado para que ainda preencham a coluna. */
   lanes: Map<T, Lane>;
-  /** Items pushed past the cap, in start order. */
+  /** Itens que ultrapassaram o limite, em ordem de início. */
   hidden: T[];
 }
 
 /**
- * Lane assignment with a ceiling.
+ * Atribuição de faixas com um teto.
  *
- * Deliberately reuses `assignLanes` rather than re-running the packer with a
- * smaller budget: that keeps a single source of truth for lane order, and makes
- * *which* item gets dropped deterministic — the greedy packer hands high indices
- * to late arrivals, so the latest-starting appointment is the one hidden.
+ * Reaproveita deliberadamente `assignLanes` em vez de rodar o empacotador novamente
+ * com um orçamento menor: isso mantém uma única fonte de verdade para a ordem das
+ * faixas e torna determinístico *qual* item é descartado — o empacotador guloso
+ * atribui índices altos aos que chegam por último, então o agendamento com início
+ * mais tardio é o que fica escondido.
  */
 export function layoutLanes<T extends Spannable>(
   items: T[],
@@ -117,7 +118,7 @@ export function layoutLanes<T extends Spannable>(
       hidden.push(item);
       continue;
     }
-    // Re-clamp `of`: a 5-lane cluster rendered at 3 would leave 40% dead space.
+    // Reajusta `of`: um cluster de 5 faixas renderizado em 3 deixaria 40% de espaço morto.
     lanes.set(item, { index: lane.index, of: Math.min(lane.of, maxLanes) });
   }
 
@@ -125,7 +126,7 @@ export function layoutLanes<T extends Spannable>(
   return { lanes, hidden };
 }
 
-/** Groups hidden items by starting hour, so the "+N" chip lands in the right cell. */
+/** Agrupa itens escondidos pela hora de início, para que o chip "+N" caia na célula certa. */
 export function overflowByHour<T extends Spannable>(hidden: T[]): Map<number, T[]> {
   const map = new Map<number, T[]>();
   for (const item of hidden) {
@@ -138,12 +139,12 @@ export function overflowByHour<T extends Spannable>(hidden: T[]): Map<number, T[
 }
 
 /**
- * Which professionals become columns in the Dia view.
+ * Quais profissionais viram colunas na visão Dia.
  *
- * An explicit selection always wins. With none, the busy professionals are shown
- * — but on a day where nobody is booked we fall back to the first few active
- * staff rather than an empty screen, because an empty column is precisely the
- * affordance for spotting a free slot to book into.
+ * Uma seleção explícita sempre prevalece. Sem ela, os profissionais ocupados são
+ * exibidos — mas em um dia sem nenhum agendamento caímos nos primeiros
+ * profissionais ativos em vez de uma tela vazia, porque uma coluna vazia é
+ * justamente o recurso para identificar um horário livre para agendar.
  */
 export function pickDayColumns<T extends { id: number }>(
   staff: T[],
@@ -153,8 +154,8 @@ export function pickDayColumns<T extends { id: number }>(
 ): { visible: T[]; hiddenCount: number } {
   if (selectedIds.length > 0) {
     const selected = new Set(selectedIds);
-    // Filter `staff` rather than mapping the ids, so column order always follows
-    // the staff list instead of the order boxes happened to be ticked.
+    // Filtra `staff` em vez de mapear os ids, para que a ordem das colunas sempre
+    // siga a lista de profissionais em vez da ordem em que as caixas foram marcadas.
     return { visible: staff.filter((s) => selected.has(s.id)).slice(0, max), hiddenCount: 0 };
   }
 

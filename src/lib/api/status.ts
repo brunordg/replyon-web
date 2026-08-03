@@ -1,6 +1,6 @@
 import type { AppointmentOrigin, AppointmentStatus, EntityStatus, PaymentMethod, WahaConnectionStatus } from "./types";
 
-// Appointment status -> Portuguese label + the existing badge style class used in the UI.
+// Status do agendamento -> rótulo em português + a classe de estilo do badge usada na UI.
 export const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
   PENDING: "Pendente",
   CONFIRMED: "Confirmado",
@@ -17,7 +17,7 @@ export const APPOINTMENT_STATUS_STYLE: Record<AppointmentStatus, string> = {
   NO_SHOW: "bg-danger-bg text-danger",
 };
 
-// Entity (customer/service/staff/company) status -> Portuguese segment label.
+// Status de entidade (cliente/serviço/profissional/empresa) -> rótulo em português.
 export const ENTITY_STATUS_LABEL: Record<EntityStatus, string> = {
   ACTIVE: "Ativo",
   INACTIVE: "Inativo",
@@ -28,7 +28,7 @@ export const ENTITY_STATUS_STYLE: Record<EntityStatus, string> = {
   INACTIVE: "bg-warn-bg text-warn",
 };
 
-// WAHA WhatsApp connection status -> Portuguese label + badge style.
+// Status de conexão WAHA do WhatsApp -> rótulo em português + estilo do badge.
 export const WHATSAPP_STATUS_LABEL: Record<WahaConnectionStatus, string> = {
   DISCONNECTED: "Desconectado",
   CONNECTING: "Conectando…",
@@ -43,7 +43,7 @@ export const WHATSAPP_STATUS_STYLE: Record<WahaConnectionStatus, string> = {
   FAILED: "bg-danger-bg text-danger",
 };
 
-// Payment method (captured when an appointment is completed) -> Portuguese label.
+// Forma de pagamento (capturada quando um agendamento é concluído) -> rótulo em português.
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   CASH: "Dinheiro",
   PIX: "Pix",
@@ -53,7 +53,7 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
 
 export const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "PIX", "CREDIT_CARD", "DEBIT_CARD"];
 
-// How the appointment was booked -> Portuguese label.
+// Como o agendamento foi feito -> rótulo em português.
 export const APPOINTMENT_ORIGIN_LABEL: Record<AppointmentOrigin, string> = {
   WHATSAPP: "WhatsApp",
   MANUAL: "Manual",

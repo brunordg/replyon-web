@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 
 /**
- * The value, settled — it only updates once `value` has stopped changing for
+ * O valor, estabilizado — só atualiza depois que `value` parar de mudar por
  * `delay` ms.
  *
- * Every search box in the app feeds a server query, so without this each
- * keystroke is a request. 350 ms is the delay /clientes has always used; keeping
- * it identical everywhere means the app types at one speed.
+ * Toda caixa de busca do app alimenta uma consulta ao servidor, então sem isso
+ * cada tecla digitada vira uma requisição. 350 ms é o delay que /clientes
+ * sempre usou; mantê-lo idêntico em todo lugar faz o app "digitar" numa
+ * velocidade só.
  */
 export function useDebouncedValue<T>(value: T, delay = 350): T {
   const [debounced, setDebounced] = useState(value);

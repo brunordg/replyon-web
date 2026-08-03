@@ -17,7 +17,7 @@ import { useUpdateService } from "@/lib/api/hooks/services";
 import { parsePrice } from "@/lib/utils";
 import type { ServiceResponse } from "@/lib/api/types";
 
-// Formats a number back into a pt-BR editable price string ("45.5" -> "45,50").
+// Formata um número de volta para uma string de preço editável em pt-BR ("45.5" -> "45,50").
 function toPriceInput(value: number): string {
   return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

@@ -1,10 +1,10 @@
-// Thin fetch wrapper around the replyon-api backend.
-// - Prefixes the API base (relative `/api`, proxied to :8090 in dev).
-// - Injects `Authorization: Bearer <token>` from the in-memory token.
-// - Serializes/parses JSON.
-// - Normalizes errors to ApiError, covering both the backend's
-//   { code, message, timestamp } shape and Spring Security's default 401/403.
-// - On 401, notifies the registered handler (used by the auth layer to log out).
+// Wrapper fino sobre fetch para o backend replyon-api.
+// - Prefixa a base da API (`/api` relativo, com proxy para :8090 em dev).
+// - Injeta `Authorization: Bearer <token>` a partir do token em memória.
+// - Serializa/faz parse de JSON.
+// - Normaliza erros para ApiError, cobrindo tanto o formato do backend
+//   { code, message, timestamp } quanto o 401/403 padrão do Spring Security.
+// - Em 401, notifica o handler registrado (usado pela camada de auth para fazer logout).
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "/api";
 
@@ -32,7 +32,7 @@ export class ApiError extends Error {
 interface RequestOptions {
   method?: string;
   body?: unknown;
-  /** Query params; undefined/null/"" values are skipped. */
+  /** Parâmetros de query; valores undefined/null/"" são ignorados. */
   params?: Record<string, string | number | boolean | undefined | null>;
   signal?: AbortSignal;
 }
@@ -50,8 +50,8 @@ function buildUrl(path: string, params?: RequestOptions["params"]): string {
 }
 
 async function parseError(res: Response): Promise<ApiError> {
-  // Backend GlobalExceptionHandler returns { code, message, timestamp }.
-  // Spring Security's default 401/403 returns a different (or empty) body.
+  // O GlobalExceptionHandler do backend retorna { code, message, timestamp }.
+  // O 401/403 padrão do Spring Security retorna um corpo diferente (ou vazio).
   let message = res.statusText || "Erro na requisição";
   try {
     const data = await res.json();
@@ -61,7 +61,7 @@ async function parseError(res: Response): Promise<ApiError> {
       message = data.error;
     }
   } catch {
-    // no/invalid JSON body — keep statusText
+    // corpo JSON ausente/inválido — mantém statusText
   }
   return new ApiError(res.status, message);
 }
@@ -88,7 +88,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw await parseError(res);
   }
 
-  // 204 No Content and empty bodies.
+  // 204 No Content e corpos vazios.
   if (res.status === 204) return undefined as T;
   const text = await res.text();
   if (!text) return undefined as T;

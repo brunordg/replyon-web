@@ -19,8 +19,9 @@ export function useCompany(id: number | undefined) {
 }
 
 /**
- * The tenant's own company. The token only carries tenant_id (no company id),
- * and the list endpoint is tenant-scoped, so the first row is this tenant's company.
+ * A própria empresa do tenant. O token carrega apenas tenant_id (sem id de
+ * empresa), e o endpoint de listagem é escopado por tenant, então a primeira
+ * linha é a empresa deste tenant.
  */
 export function useMyCompany() {
   return useQuery({
@@ -36,8 +37,8 @@ export function useUpdateCompany() {
     mutationFn: ({ id, body }: { id: number; body: UpdateCompanyRequest }) =>
       companiesApi.update(id, body),
     onSuccess: () => {
-      // Invalidate the whole key: the company is cached both by id and under
-      // "mine" (see useMyCompany), and a save must refresh both.
+      // Invalida a chave inteira: a empresa é cacheada tanto por id quanto sob
+      // "mine" (ver useMyCompany), e um salvamento precisa atualizar ambos.
       qc.invalidateQueries({ queryKey: [KEY] });
       toast.success("Empresa atualizada");
     },

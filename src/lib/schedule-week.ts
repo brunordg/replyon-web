@@ -1,10 +1,11 @@
-// Editor-side model for a staff member's working week.
+// Modelo do lado do editor para a semana de trabalho de um profissional.
 //
-// The API holds a flat list of windows (see ScheduleResponse); the editor
-// pivots that into a per-day map so each row can be toggled and edited
-// independently, including days the schedule has no window for. Everything here
-// works in "HH:mm" strings to match <input type="time">; conversion to the
-// wire's "HH:mm:ss" happens at the `toWeekState` / `toScheduleRequest` edges.
+// A API mantém uma lista simples de janelas (ver ScheduleResponse); o editor
+// transforma isso em um mapa por dia para que cada linha possa ser ativada e
+// editada de forma independente, incluindo dias sem nenhuma janela na agenda.
+// Tudo aqui trabalha com strings "HH:mm" para casar com <input type="time">;
+// a conversão para o "HH:mm:ss" da API acontece nas bordas `toWeekState` /
+// `toScheduleRequest`.
 
 import { API_DAY_OF_WEEK, SCHEDULE_DAYS, SCHEDULE_DAY_BY_API } from "@/lib/api/types";
 import type {
@@ -27,7 +28,7 @@ export const DAY_LABEL: Record<ScheduleDay, string> = {
 export const WEEKDAYS: ScheduleDay[] = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 export const WEEKEND: ScheduleDay[] = ["saturday", "sunday"];
 
-/** A single continuous working window inside a day. */
+/** Uma única janela de trabalho contínua dentro de um dia. */
 export interface Window {
   id: string;
   start: string; // "HH:mm"
@@ -42,7 +43,7 @@ export interface DayState {
 export type WeekState = Record<ScheduleDay, DayState>;
 
 let windowSeq = 0;
-/** Windows need a stable key that survives reordering, so they carry an id. */
+/** As janelas precisam de uma chave estável que sobreviva a reordenações, por isso carregam um id. */
 export function makeWindow(start: string, end: string): Window {
   windowSeq += 1;
   return { id: `w${windowSeq}`, start, end };
@@ -65,21 +66,22 @@ export const DEFAULT_WEEK = (): WeekState =>
     ["13:00", "18:00"],
   ]);
 
-/** "09:00:00" (LocalTime on the wire) -> "09:00" for <input type="time">. */
+/** "09:00:00" (LocalTime na API) -> "09:00" para <input type="time">. */
 function toInputTime(value: string): string {
   return value.slice(0, 5);
 }
 
 /**
- * Seeds the editor from the persisted schedule, grouping the flat window list
- * by day. A day with no window renders as disabled, pre-filled with a sensible
- * default so toggling it on gives the user something to edit.
+ * Inicializa o editor a partir da agenda persistida, agrupando a lista simples
+ * de janelas por dia. Um dia sem janela é renderizado como desativado,
+ * pré-preenchido com um padrão sensato para que, ao ativá-lo, o usuário tenha
+ * algo para editar.
  */
 export function toWeekState(schedule: ScheduleResponse): WeekState {
   const byDay = new Map<ScheduleDay, Window[]>();
   for (const w of schedule.windows ?? []) {
     const day = SCHEDULE_DAY_BY_API[w.dayOfWeek];
-    if (!day) continue; // ignore any day name we don't know
+    if (!day) continue; // ignora qualquer nome de dia desconhecido
     const list = byDay.get(day) ?? [];
     list.push(makeWindow(toInputTime(w.startTime), toInputTime(w.endTime)));
     byDay.set(day, list);
@@ -95,13 +97,13 @@ export function toWeekState(schedule: ScheduleResponse): WeekState {
   }, {} as WeekState);
 }
 
-/** Minutes since midnight, or NaN when the value is incomplete. */
+/** Minutos desde a meia-noite, ou NaN quando o valor está incompleto. */
 export function minutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
   return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : NaN;
 }
 
-/** "HH:mm" from minutes since midnight. */
+/** "HH:mm" a partir de minutos desde a meia-noite. */
 export function fromMinutes(total: number): string {
   const h = Math.floor(total / 60);
   return `${String(h).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
@@ -119,7 +121,7 @@ export function weeklyTotalHours(week: WeekState): number {
   return total / 60;
 }
 
-/** Per-day validation: complete, ordered, and non-overlapping windows. */
+/** Validação por dia: janelas completas, ordenadas e sem sobreposição. */
 export function validateWeek(week: WeekState): Partial<Record<ScheduleDay, string>> {
   const errors: Partial<Record<ScheduleDay, string>> = {};
   for (const day of SCHEDULE_DAYS) {
@@ -145,9 +147,9 @@ export function validateWeek(week: WeekState): Partial<Record<ScheduleDay, strin
 }
 
 /**
- * Flattens the editor into the API payload: every window of every enabled day,
- * ordered by day then start time. Disabled days contribute nothing, which is
- * how the API represents "does not work that day".
+ * Achata o editor no payload da API: cada janela de cada dia ativado, ordenadas
+ * por dia e depois por horário de início. Dias desativados não contribuem com
+ * nada, que é como a API representa "não trabalha nesse dia".
  */
 export function toScheduleRequest(week: WeekState, intervalMinutes: number): UpdateScheduleRequest {
   const windows: ScheduleWindowRequest[] = [];

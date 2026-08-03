@@ -3,15 +3,15 @@ import { searchApi } from "../search";
 
 const KEY = "search";
 
-/** Minimum term length; matches the API's own guard. */
+/** Tamanho mínimo do termo; combina com a própria checagem da API. */
 export const MIN_SEARCH_LENGTH = 2;
 
 /**
- * Global search results for `q`.
+ * Resultados de busca global para `q`.
  *
- * `enabled` lets the caller stop querying while the palette is closed, and
- * `placeholderData` keeps the previous hits on screen between keystrokes so the
- * list does not blink empty on every refetch.
+ * `enabled` permite que quem chama pare de consultar enquanto a paleta está
+ * fechada, e `placeholderData` mantém os resultados anteriores na tela entre
+ * as teclas digitadas para que a lista não pisque vazia a cada refetch.
  */
 export function useGlobalSearch(q: string, enabled = true) {
   return useQuery({

@@ -1,20 +1,21 @@
-// Helpers for the "Novo agendamento" time picker.
+// Auxiliares para o seletor de horário do "Novo agendamento".
 //
-// The backend owns availability: GET /v1/availability/staff/{id}/slots takes the
-// serviceId and returns only the start times where the *whole* service fits —
-// so a 70-minute service on a 30-minute grid is already excluded from any start
-// that lacks 3 consecutive free slots. These helpers don't recompute that; they
-// derive the grid size from the returned starts so the UI can spell out what a
-// chosen start actually consumes ("09:00 – 10:10 · 3 slots de 30 min").
+// O backend é dono da disponibilidade: GET /v1/availability/staff/{id}/slots recebe
+// o serviceId e retorna apenas os horários de início em que o serviço *inteiro*
+// cabe — então um serviço de 70 minutos numa grade de 30 minutos já exclui
+// qualquer início que não tenha 3 slots livres consecutivos. Esses auxiliares não
+// recalculam isso; eles derivam o tamanho da grade a partir dos horários
+// retornados, para que a UI possa explicar o que um horário escolhido realmente
+// consome ("09:00 – 10:10 · 3 slots de 30 min").
 
-/** "09:00:00" | "09:00" -> "09:00". Returns the input unchanged if unparseable. */
+/** "09:00:00" | "09:00" -> "09:00". Retorna o valor de entrada inalterado se não puder ser interpretado. */
 export function normalizeTime(raw: string): string {
   const m = /^(\d{1,2}):(\d{2})/.exec(raw.trim());
   if (!m) return raw;
   return `${m[1].padStart(2, "0")}:${m[2]}`;
 }
 
-/** Minutes since midnight, or NaN. */
+/** Minutos desde a meia-noite, ou NaN. */
 export function timeToMinutes(raw: string): number {
   const m = /^(\d{1,2}):(\d{2})/.exec(raw.trim());
   if (!m) return NaN;
@@ -35,13 +36,14 @@ export function addMinutes(time: string, minutes: number): string {
 }
 
 /**
- * The grid granularity, inferred from the smallest gap between consecutive
- * available starts. Undefined when there are fewer than two slots (a single
- * start tells us nothing about spacing) or when every gap is unparseable.
+ * A granularidade da grade, inferida a partir do menor intervalo entre horários
+ * de início disponíveis consecutivos. É undefined quando há menos de dois slots
+ * (um único horário não diz nada sobre o espaçamento) ou quando nenhum intervalo
+ * pode ser interpretado.
  *
- * Inferring beats reading the staff schedule's `intervalBetweenAppointments`:
- * that field is the padding *between* appointments, not the grid the backend
- * actually emits, and the two are not guaranteed to agree.
+ * Inferir é melhor do que ler o `intervalBetweenAppointments` da agenda do
+ * profissional: esse campo é o espaçamento *entre* agendamentos, não a grade que
+ * o backend de fato emite, e os dois não têm garantia de coincidir.
  */
 export function detectSlotMinutes(slots: string[]): number | undefined {
   const mins = slots.map(timeToMinutes).filter((n) => !Number.isNaN(n));
@@ -55,7 +57,7 @@ export function detectSlotMinutes(slots: string[]): number | undefined {
   return Number.isFinite(smallest) ? smallest : undefined;
 }
 
-/** How many grid slots a service of `durationMinutes` occupies. */
+/** Quantos slots da grade um serviço de `durationMinutes` ocupa. */
 export function slotsRequired(
   durationMinutes: number,
   slotMinutes: number | undefined,
@@ -66,7 +68,7 @@ export function slotsRequired(
   return Math.ceil(durationMinutes / slotMinutes);
 }
 
-/** "YYYY-MM-DD" in local time — never via toISOString(), which shifts to UTC. */
+/** "YYYY-MM-DD" em horário local — nunca via toISOString(), que converte para UTC. */
 export function toDateParam(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -74,7 +76,7 @@ export function toDateParam(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-/** Local ISO datetime the backend expects, e.g. "2026-07-18T09:00:00". */
+/** Datetime ISO local que o backend espera, ex.: "2026-07-18T09:00:00". */
 export function toLocalDateTime(date: Date, time: string): string {
   return `${toDateParam(date)}T${normalizeTime(time)}:00`;
 }

@@ -1,8 +1,8 @@
-// Presentation helpers for the Bloqueios screen.
+// Auxiliares de apresentação para a tela de Bloqueios.
 //
-// The backend stores one TimeBlock per professional, so "bloquear para todos"
-// produces N sibling records. Everything here is about reading those N back as
-// the single block the user thinks they created.
+// O backend armazena um TimeBlock por profissional, então "bloquear para todos"
+// gera N registros irmãos. Tudo aqui trata de ler esses N registros de volta
+// como o bloco único que o usuário acha que criou.
 
 import type { TimeBlockResponse } from "./api/types";
 
@@ -28,10 +28,11 @@ export function blockTypeLabel(type: string): string {
 const WEEKDAYS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
 /**
- * How often the block repeats, phrased from the anchor date.
+ * Com que frequência o bloco se repete, formulado a partir da data âncora.
  *
- * WEEKLY repeats on the *same weekday* as the first occurrence — it is not a
- * Mon–Fri range — so the label names the day instead of implying a span.
+ * WEEKLY se repete no *mesmo dia da semana* da primeira ocorrência — não é um
+ * intervalo de segunda a sexta — então o rótulo nomeia o dia em vez de sugerir
+ * um período.
  */
 export function recurrenceLabel(block: TimeBlockResponse): string {
   if (!block.isRecurring || !block.recurrencePattern || block.recurrencePattern === "NONE") {
@@ -52,7 +53,7 @@ export function recurrenceLabel(block: TimeBlockResponse): string {
   }
 }
 
-/** Midnight to midnight is how a whole-day block is stored. */
+/** De meia-noite a meia-noite é como um bloco de dia inteiro é armazenado. */
 export function isAllDay(start: string, end: string): boolean {
   return start.slice(11, 16) === "00:00" && end.slice(11, 16) === "00:00";
 }
@@ -63,25 +64,26 @@ export function timeRangeLabel(start: string, end: string): string {
 }
 
 export interface BlockGroup {
-  /** Stable across renders: identical content always yields the same key. */
+  /** Estável entre renderizações: conteúdo idêntico sempre gera a mesma chave. */
   key: string;
-  /** The first sibling — every field except `staffId` is shared. */
+  /** O primeiro irmão — todos os campos exceto `staffId` são compartilhados. */
   sample: TimeBlockResponse;
-  /** Every record behind this card; edits and removals apply to all of them. */
+  /** Todos os registros por trás deste card; edições e remoções se aplicam a todos eles. */
   members: TimeBlockResponse[];
   staffIds: number[];
 }
 
 /**
- * Collapses sibling records into one card per logical block.
+ * Colapsa registros irmãos em um card por bloco lógico.
  *
- * Grouping is by content, not by a shared id — nothing links the siblings in the
- * database. The consequence is honest: two blocks created separately but with
- * identical type, window, reason and recurrence are indistinguishable, so they
- * merge. That matches how they read on the agenda anyway.
+ * O agrupamento é por conteúdo, não por um id compartilhado — nada liga os
+ * irmãos no banco de dados. A consequência é honesta: dois blocos criados
+ * separadamente mas com tipo, janela, motivo e recorrência idênticos são
+ * indistinguíveis, então se fundem. Isso condiz com a forma como aparecem na
+ * agenda de qualquer forma.
  *
- * Cancelled blocks are dropped: they no longer affect availability, so showing
- * them would invite the user to "remove" something already inert.
+ * Blocos cancelados são descartados: eles não afetam mais a disponibilidade,
+ * então exibi-los convidaria o usuário a "remover" algo já inerte.
  */
 export function groupBlocks(blocks: TimeBlockResponse[]): BlockGroup[] {
   const groups = new Map<string, BlockGroup>();
@@ -111,7 +113,7 @@ export function groupBlocks(blocks: TimeBlockResponse[]): BlockGroup[] {
   );
 }
 
-/** "Todos" only when the group really covers every active professional. */
+/** "Todos" apenas quando o grupo realmente cobre todos os profissionais ativos. */
 export function staffLabel(group: BlockGroup, names: Map<number, string>, total: number): string {
   if (total > 0 && group.staffIds.length >= total) return "Todos";
   if (group.staffIds.length === 1) {

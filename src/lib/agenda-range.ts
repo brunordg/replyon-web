@@ -1,8 +1,8 @@
-// Date-range logic for the agenda's Dia / Semana / Mês views.
+// Lógica de intervalo de datas para as visões Dia / Semana / Mês da agenda.
 //
-// Pure and local-time throughout: the range shown, how the arrows move, and the
-// header label all derive from an anchor date plus the active view. Nothing here
-// touches business rules — it only decides which days are on screen.
+// Pura e sempre em horário local: o intervalo exibido, como as setas se movem e
+// o rótulo do cabeçalho derivam de uma data âncora mais a visão ativa. Nada aqui
+// mexe em regras de negócio — apenas decide quais dias aparecem na tela.
 
 export type AgendaView = "dia" | "semana" | "mes";
 
@@ -20,7 +20,7 @@ export function addDays(d: Date, days: number): Date {
   return x;
 }
 
-/** Monday-based, matching the pt-BR calendar. */
+/** Baseado em segunda-feira, seguindo o calendário pt-BR. */
 export function startOfWeek(d: Date): Date {
   const x = startOfDay(d);
   return addDays(x, -((x.getDay() + 6) % 7));
@@ -32,7 +32,7 @@ export function startOfMonth(d: Date): Date {
   return x;
 }
 
-/** Anchors to day 1 before shifting: Jan 31 + 1 month must be February, not March. */
+/** Ancora no dia 1 antes de deslocar: 31 de jan + 1 mês deve ser fevereiro, não março. */
 export function addMonths(d: Date, months: number): Date {
   const x = startOfMonth(d);
   x.setMonth(x.getMonth() + months);
@@ -47,7 +47,7 @@ export function sameDay(a: Date, b: Date): boolean {
   );
 }
 
-/** "2026-07-18" in local time — never via toISOString(), which shifts to UTC. */
+/** "2026-07-18" em horário local — nunca via toISOString(), que converte para UTC. */
 export function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate(),
@@ -55,12 +55,12 @@ export function dateKey(d: Date): string {
 }
 
 /**
- * The days on screen for a view.
+ * Os dias exibidos na tela para uma visão.
  *
- * - dia: the anchor alone
- * - semana: Monday through Saturday (6 columns; Sunday is not a working day here)
- * - mes: whole weeks covering the month, so the calendar grid is always
- *   rectangular — leading/trailing days belong to the neighbouring months
+ * - dia: apenas a data âncora
+ * - semana: segunda a sábado (6 colunas; domingo não é dia útil aqui)
+ * - mes: semanas inteiras cobrindo o mês, para que a grade do calendário seja
+ *   sempre retangular — dias no início/fim pertencem aos meses vizinhos
  */
 export function daysFor(view: AgendaView, anchor: Date): Date[] {
   if (view === "dia") return [startOfDay(anchor)];
@@ -77,14 +77,14 @@ export function daysFor(view: AgendaView, anchor: Date): Date[] {
   return out;
 }
 
-/** Moving by one view-sized step: a day, a week, a month. */
+/** Move um passo do tamanho da visão: um dia, uma semana, um mês. */
 export function shift(view: AgendaView, anchor: Date, direction: 1 | -1): Date {
   if (view === "dia") return addDays(anchor, direction);
   if (view === "semana") return addDays(anchor, 7 * direction);
   return addMonths(anchor, direction);
 }
 
-/** Header label: "18 de julho, 2026" / "13 – 18 de julho, 2026" / "Julho 2026". */
+/** Rótulo do cabeçalho: "18 de julho, 2026" / "13 – 18 de julho, 2026" / "Julho 2026". */
 export function rangeLabel(view: AgendaView, anchor: Date): string {
   if (view === "dia") {
     return startOfDay(anchor).toLocaleDateString("pt-BR", {
@@ -103,7 +103,7 @@ export function rangeLabel(view: AgendaView, anchor: Date): string {
   const days = daysFor("semana", anchor);
   const first = days[0];
   const last = days[days.length - 1];
-  // A week can straddle two months — say both rather than implying one.
+  // Uma semana pode atravessar dois meses — cita os dois em vez de sugerir apenas um.
   if (first.getMonth() !== last.getMonth()) {
     const f = first.toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
     const l = last.toLocaleDateString("pt-BR", { day: "numeric", month: "short" });

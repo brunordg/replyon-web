@@ -22,15 +22,15 @@ import { PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "@/lib/api/status";
 import type { PaymentMethod } from "@/lib/api/types";
 
 interface ConcluirAgendamentoDialogProps {
-  /** The appointment being completed; the dialog is open whenever this is set. */
+  /** O agendamento sendo concluído; o diálogo fica aberto sempre que isso está definido. */
   appointmentId: number | null;
   onOpenChange: (open: boolean) => void;
 }
 
 /**
- * Confirms an appointment's completion by asking for the payment method —
- * mandatory, since the backend rejects a completion without one. Controlled
- * from the parent row's "Concluir" button rather than owning its own trigger.
+ * Confirma a conclusão de um agendamento solicitando a forma de pagamento —
+ * obrigatória, já que o backend rejeita uma conclusão sem ela. Controlado a
+ * partir do botão "Concluir" da linha pai, em vez de ter seu próprio gatilho.
  */
 export function ConcluirAgendamentoDialog({ appointmentId, onOpenChange }: ConcluirAgendamentoDialogProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");

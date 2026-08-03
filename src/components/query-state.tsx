@@ -1,7 +1,7 @@
 import { Loader2, AlertCircle, Inbox } from "lucide-react";
 import { ApiError } from "@/lib/api/client";
 
-/** Centered spinner block, sized to sit inside a card/section. */
+/** Bloco de spinner centralizado, dimensionado para caber dentro de um card/seção. */
 export function LoadingState({ label = "Carregando…" }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-2 py-16 text-[12px] text-ry-ink-soft">

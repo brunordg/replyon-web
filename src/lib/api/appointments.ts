@@ -16,7 +16,7 @@ export interface AppointmentListParams {
 }
 
 export const appointmentsApi = {
-  /** List by customer (customerId required by the backend). */
+  /** Lista por cliente (customerId é obrigatório para o backend). */
   listByCustomer: (params: AppointmentListParams, signal?: AbortSignal) =>
     apiClient.get<AppointmentPage>(base, params as Record<string, number | undefined>, signal),
   listByStaff: (staffId: number, params?: { page?: number; size?: number }, signal?: AbortSignal) =>

@@ -1,4 +1,4 @@
-/** Progressive input mask: "12345678901" -> "123.456.789-01" (CPF). */
+/** Máscara de entrada progressiva: "12345678901" -> "123.456.789-01" (CPF). */
 export function maskCPF(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
   if (digits.length <= 3) return digits;
@@ -7,7 +7,7 @@ export function maskCPF(value: string): string {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
-/** Progressive input mask: "12345678000199" -> "12.345.678/0001-99" (CNPJ). */
+/** Máscara de entrada progressiva: "12345678000199" -> "12.345.678/0001-99" (CNPJ). */
 export function maskCNPJ(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 14);
   if (digits.length <= 2) return digits;
@@ -18,13 +18,13 @@ export function maskCNPJ(value: string): string {
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
-/** CPF while typing up to 11 digits, switches to CNPJ formatting from the 12th digit on. */
+/** CPF enquanto digita até 11 dígitos, muda para formatação de CNPJ a partir do 12º dígito. */
 export function maskDocument(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 14);
   return digits.length <= 11 ? maskCPF(digits) : maskCNPJ(digits);
 }
 
-/** Brazilian cell phone mask: "11900000000" -> "(11) 90000-0000". */
+/** Máscara de celular brasileiro: "11900000000" -> "(11) 90000-0000". */
 export function maskPhone(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
   if (digits.length === 0) return "";

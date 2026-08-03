@@ -147,8 +147,8 @@ function AppShell() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Client-side route guard: unauthenticated users are sent to /login.
-  // The token lives in localStorage, so this runs after hydration.
+  // Proteção de rota no lado do cliente: usuários não autenticados são enviados para /login.
+  // O token vive no localStorage, então isso roda depois da hidratação.
   useEffect(() => {
     if (isLoading) return;
     if (!isAuthenticated && !isAuthRoute) {
@@ -158,7 +158,7 @@ function AppShell() {
 
   if (isAuthRoute) return <Outlet />;
 
-  // While hydrating or before the redirect lands, don't flash protected content.
+  // Enquanto hidrata ou antes do redirecionamento acontecer, não exibir conteúdo protegido por um instante.
   if (isLoading || !isAuthenticated) {
     return <div className="min-h-screen bg-background" aria-hidden />;
   }

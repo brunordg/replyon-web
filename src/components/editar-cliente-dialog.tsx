@@ -27,7 +27,7 @@ export function EditarClienteDialog({ customer }: { customer: CustomerResponse }
   const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
   const updateCustomer = useUpdateCustomer();
 
-  // Reseed the form from the customer whenever the dialog opens.
+  // Repopula o formulário a partir do cliente sempre que o diálogo abre.
   useEffect(() => {
     if (open) {
       setName(customer.name);

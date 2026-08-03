@@ -1,19 +1,19 @@
-// Presentation helpers for the dashboard KPI cards.
+// Auxiliares de apresentação para os cards de KPI do dashboard.
 //
-// The metrics themselves — period boundaries, which statuses count, and the
-// previous-period comparisons — are computed by the API
-// (GET /v1/dashboard/metrics). Nothing here decides a business rule; these
-// functions only turn a number the server already produced into a label.
+// As métricas em si — limites do período, quais status contam e as comparações
+// com o período anterior — são calculadas pela API (GET /v1/dashboard/metrics).
+// Nada aqui decide uma regra de negócio; essas funções apenas transformam um
+// número que o servidor já produziu em um rótulo.
 
 export type TrendDirection = "up" | "down" | "flat";
 
-/** A null delta means the API had no baseline to compare against. */
+/** Um delta nulo significa que a API não tinha uma base de comparação. */
 export function directionOf(delta: number | null | undefined): TrendDirection {
   if (delta === null || delta === undefined || Math.abs(delta) < 0.05) return "flat";
   return delta > 0 ? "up" : "down";
 }
 
-/** "+12%" / "−8%" / "—" when there is no baseline. */
+/** "+12%" / "−8%" / "—" quando não há base de comparação. */
 export function formatPercentDelta(delta: number | null | undefined): string {
   if (delta === null || delta === undefined) return "—";
   const rounded = Math.round(delta);
@@ -21,7 +21,7 @@ export function formatPercentDelta(delta: number | null | undefined): string {
   return `${rounded > 0 ? "+" : "−"}${Math.abs(rounded)}%`;
 }
 
-/** Percentage-point delta — rates compare in p.p., never in percent. */
+/** Delta em pontos percentuais — taxas se comparam em p.p., nunca em porcentagem. */
 export function formatPointsDelta(delta: number | null | undefined): string {
   if (delta === null || delta === undefined) return "—";
   const rounded = Math.round(delta * 10) / 10;
@@ -29,7 +29,7 @@ export function formatPointsDelta(delta: number | null | undefined): string {
   return `${rounded > 0 ? "+" : "−"}${Math.abs(rounded)} p.p.`;
 }
 
-/** "2 a menos" / "3 a mais" / "igual" — absolute difference reads better than % for counts. */
+/** "2 a menos" / "3 a mais" / "igual" — diferença absoluta lê melhor que % para contagens. */
 export function formatCountDelta(value: number, previous: number): string {
   const diff = value - previous;
   if (diff === 0) return "igual";

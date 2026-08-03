@@ -38,9 +38,9 @@ export function useCreateStaff() {
 }
 
 /**
- * Creates a staff member and, if any services are selected, assigns them in a
- * second call (POST /staff/{id}/services) — the backend has no single endpoint
- * that does both at once.
+ * Cria um profissional e, se algum serviço estiver selecionado, atribui-os
+ * numa segunda chamada (POST /staff/{id}/services) — o backend não tem um
+ * único endpoint que faça as duas coisas de uma vez.
  */
 export function useCreateStaffWithServices() {
   const qc = useQueryClient();
@@ -79,7 +79,7 @@ export function useUpdateStaff() {
   });
 }
 
-/** Service ids currently assigned to a staff member. */
+/** Ids de serviço atualmente atribuídos a um profissional. */
 export function useStaffServices(staffId: number | undefined, enabled = true) {
   return useQuery({
     queryKey: [SERVICES_KEY, staffId],
@@ -90,13 +90,14 @@ export function useStaffServices(staffId: number | undefined, enabled = true) {
 }
 
 /**
- * Assigned service ids for every given staff member, as a Map.
+ * Ids de serviço atribuídos a cada profissional informado, como um Map.
  *
- * The backend only answers "which services does staff X do?" one staff at a
- * time (GET /staff/{id}/services), so we fan out — same shape as
- * `useAllAppointmentsByStaff`. Staff lists are small and the responses are just
- * id arrays, and react-query dedupes these with the per-staff `useStaffServices`
- * calls since both share the `[SERVICES_KEY, id]` key.
+ * O backend só responde "quais serviços o profissional X faz?" um por vez
+ * (GET /staff/{id}/services), então fazemos fan-out — mesmo formato de
+ * `useAllAppointmentsByStaff`. Listas de profissionais são pequenas e as
+ * respostas são apenas arrays de id, e o react-query deduplica isso com as
+ * chamadas por profissional de `useStaffServices` já que ambas compartilham a
+ * chave `[SERVICES_KEY, id]`.
  */
 export function useStaffServicesMap(staffIds: number[], enabled = true) {
   const results = useQueries({
@@ -108,16 +109,16 @@ export function useStaffServicesMap(staffIds: number[], enabled = true) {
     })),
   });
 
-  // Don't block on the slowest member: loading means nothing has arrived,
-  // error means everything failed. A partial failure degrades to that staff
-  // simply not being offered.
+  // Não bloqueia pelo membro mais lento: loading significa que nada chegou,
+  // error significa que tudo falhou. Uma falha parcial degrada para aquele
+  // profissional simplesmente não ser oferecido.
   const hasAny = results.some((r) => r.data);
   const isLoading = !hasAny && results.some((r) => r.isLoading);
   const isError = results.length > 0 && results.every((r) => r.isError);
 
-  // `useQueries` hands back a fresh array each render, so the Map has to be
-  // memoized on the *contents* — otherwise every consumer's useMemo/useEffect
-  // that depends on it re-runs on every render.
+  // `useQueries` devolve um array novo a cada renderização, então o Map
+  // precisa ser memoizado pelo *conteúdo* — senão o useMemo/useEffect de todo
+  // consumidor que dependa dele reexecuta a cada renderização.
   const signature = JSON.stringify(staffIds.map((id, i) => [id, results[i]?.data ?? null]));
 
   const byStaffId = useMemo(() => {
@@ -132,9 +133,9 @@ export function useStaffServicesMap(staffIds: number[], enabled = true) {
 }
 
 /**
- * Updates a staff member and reconciles its service assignments: assigns the
- * newly-selected ids and unassigns the removed ones (the backend exposes only
- * per-id assign/unassign, so we diff against the current selection).
+ * Atualiza um profissional e reconcilia suas atribuições de serviço: atribui
+ * os ids recém-selecionados e desatribui os removidos (o backend só expõe
+ * assign/unassign por id, então comparamos com a seleção atual).
  */
 export function useUpdateStaffWithServices() {
   const qc = useQueryClient();

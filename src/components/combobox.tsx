@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export interface ComboboxOption {
   value: string;
   label: string;
-  /** Secondary text shown muted next to the label. */
+  /** Texto secundário exibido em tom mais claro ao lado do rótulo. */
   hint?: string;
 }
 
@@ -27,28 +27,27 @@ export interface ComboboxProps {
   emptyLabel?: string;
   disabled?: boolean;
   /**
-   * Label for the current value when it is not in `options`.
+   * Rótulo para o valor atual quando ele não está em `options`.
    *
-   * In server-side mode the option list is only the last page of results, so the
-   * chosen item usually is not in it — without this the trigger would go blank
-   * the moment the user types something else.
+   * No modo server-side a lista de opções é apenas a última página de resultados,
+   * então o item escolhido geralmente não está nela — sem isso o gatilho ficaria
+   * em branco assim que o usuário digitasse outra coisa.
    */
   valueLabel?: string;
   /**
-   * Provide this to search on the server: the component stops filtering locally
-   * and hands every keystroke to the caller instead. Omit it and cmdk filters
-   * the given options in the browser, which is right for short, already-filtered
-   * lists.
+   * Forneça isso para buscar no servidor: o componente para de filtrar localmente
+   * e passa cada tecla digitada para quem chamou. Omita e o cmdk filtra as opções
+   * fornecidas no navegador, o que é correto para listas curtas e já filtradas.
    */
   onSearchChange?: (search: string) => void;
   loading?: boolean;
 }
 
 /**
- * Type-ahead select.
+ * Select com busca incremental (type-ahead).
  *
- * Replaces a plain Select wherever the list is long enough that scrolling to a
- * name is the slow part.
+ * Substitui um Select simples sempre que a lista é longa o bastante para que
+ * rolar até um nome seja a parte lenta.
  */
 export function Combobox({
   value,
@@ -76,7 +75,7 @@ export function Combobox({
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
-    // Reset the filter on close so reopening never shows a stale subset.
+    // Reseta o filtro ao fechar para que reabrir nunca mostre um subconjunto desatualizado.
     if (!next) handleSearch("");
   }
 
@@ -100,8 +99,8 @@ export function Combobox({
       </PopoverTrigger>
 
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        {/* Local mode lets cmdk filter; server mode must not, or it would filter
-            the server's answer a second time against a stale input. */}
+        {/* No modo local o cmdk pode filtrar; no modo servidor não deve, ou filtraria
+            a resposta do servidor uma segunda vez contra um input desatualizado. */}
         <Command shouldFilter={!serverSide}>
           <CommandInput
             placeholder={searchPlaceholder}
@@ -132,9 +131,9 @@ export function Combobox({
                   {options.map((option) => (
                     <CommandItem
                       key={option.value}
-                      // The value stays the id so selection is unambiguous when
-                      // two people share a name; `keywords` is what local mode
-                      // actually matches the typing against.
+                      // O value permanece o id para que a seleção seja inequívoca quando
+                      // duas pessoas compartilham um nome; `keywords` é o que o modo local
+                      // realmente compara com o que foi digitado.
                       value={option.value}
                       keywords={[option.label, option.hint ?? ""]}
                       onSelect={() => {

@@ -17,7 +17,7 @@ import type { CustomerResponse } from "@/lib/api/types";
 export const Route = createFileRoute("/clientes")({
   validateSearch: (search: Record<string, unknown>): { q?: string } => {
     const q = typeof search.q === "string" ? search.q.trim() : "";
-    // Returning {} rather than { q: undefined } keeps "?q=" out of the URL.
+    // Retornar {} em vez de { q: undefined } mantém "?q=" fora da URL.
     return q ? { q } : {};
   },
   component: ClientesPage,
@@ -33,8 +33,8 @@ function ClientesPage() {
   const { q } = Route.useSearch();
   const [search, setSearch] = useState(q ?? "");
 
-  // Searching again from the top bar while already on this page updates the
-  // search param without remounting, so the input has to follow it.
+  // Buscar novamente pela barra superior enquanto já se está nesta página
+  // atualiza o parâmetro de busca sem remontar, então o input precisa acompanhá-lo.
   useEffect(() => {
     setSearch(q ?? "");
   }, [q]);
@@ -132,8 +132,8 @@ function ClientesPage() {
                     </td>
                     <td className="border-b border-ry-line px-4 py-3 whitespace-nowrap">
                       <div className="flex gap-1.5">
-                        {/* Inactive clients cannot be booked — the dialog only
-                            offers active ones, so the action would dead-end. */}
+                        {/* Clientes inativos não podem ser agendados — o diálogo só
+                            oferece os ativos, então a ação chegaria a um beco sem saída. */}
                         {c.status === "ACTIVE" && (
                           <NovoAgendamentoDialog
                             customer={c}

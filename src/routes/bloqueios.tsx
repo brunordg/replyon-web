@@ -32,11 +32,11 @@ export const Route = createFileRoute("/bloqueios")({
   }),
 });
 
-/** A month back and a month forward — recent history plus what is already planned. */
+/** Um mês para trás e um mês para frente — histórico recente mais o que já está planejado. */
 const DEFAULT_DAYS_BACK = 30;
 const DEFAULT_DAYS_AHEAD = 30;
 
-/** One date picker; both ends of the range use it. */
+/** Um único seletor de data; ambas as extremidades do intervalo o utilizam. */
 function DateFilter({
   label,
   value,
@@ -144,8 +144,8 @@ function BloqueiosPage() {
         </Card>
       ) : groups.length === 0 ? (
         <Card className="rounded-[14px] border-ry-line p-0">
-          {/* Naming the period matters: an empty screen otherwise reads as
-              "nothing exists" when it really means "nothing in this range". */}
+          {/* Nomear o período importa: uma tela vazia sem isso parece dizer
+              "nada existe" quando na verdade significa "nada neste intervalo". */}
           <EmptyState label="Nenhum bloqueio no período selecionado." />
         </Card>
       ) : (
@@ -206,7 +206,7 @@ function BloqueiosPage() {
         </div>
       )}
 
-      {/* Keyed so switching cards remounts the form instead of keeping stale state. */}
+      {/* Com key para que trocar de card remonte o formulário em vez de manter estado obsoleto. */}
       {editing && (
         <NovoBloqueioDialog
           key={editing.key}

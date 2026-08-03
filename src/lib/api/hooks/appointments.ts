@@ -32,10 +32,11 @@ export function useAppointmentsByStaff(
 }
 
 /**
- * Aggregates appointments across every staff member — the backend has no
- * "list all appointments for the tenant" endpoint, only per-staff/per-customer.
- * Fan-out over the provided staff ids; each appointment belongs to one staff,
- * so no de-duplication is needed.
+ * Agrega agendamentos de todos os profissionais — o backend não tem um
+ * endpoint "listar todos os agendamentos do tenant", apenas por
+ * profissional/cliente. Faz fan-out sobre os ids de profissional informados;
+ * cada agendamento pertence a um único profissional, então não é preciso
+ * deduplicar.
  */
 export function useAllAppointmentsByStaff(staffIds: number[], size = 200) {
   const results = useQueries({
@@ -71,9 +72,10 @@ export function useCreateAppointment() {
 }
 
 /**
- * Creates an appointment and, when the user picked "Confirmado" as the initial
- * status, confirms it in a second call — CreateAppointmentRequest carries no
- * status field, so the backend always starts an appointment as PENDING.
+ * Cria um agendamento e, quando o usuário escolheu "Confirmado" como status
+ * inicial, confirma numa segunda chamada — CreateAppointmentRequest não
+ * carrega um campo de status, então o backend sempre inicia um agendamento
+ * como PENDING.
  */
 export function useCreateAppointmentWithStatus() {
   const qc = useQueryClient();
@@ -121,9 +123,10 @@ export function useAppointmentAction() {
 }
 
 /**
- * Completing an appointment requires a payment method (captured via a
- * confirmation dialog), unlike the other quick actions — kept separate from
- * useAppointmentAction rather than widening its generic shape for one case.
+ * Concluir um agendamento exige uma forma de pagamento (capturada via um
+ * diálogo de confirmação), diferente das outras ações rápidas — mantido
+ * separado de useAppointmentAction em vez de alargar seu formato genérico
+ * para um único caso.
  */
 export function useCompleteAppointment() {
   const qc = useQueryClient();

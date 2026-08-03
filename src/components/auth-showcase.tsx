@@ -8,7 +8,7 @@ import { CalendarCheck, Sparkles, Users, Clock } from "lucide-react";
 export function AuthShowcase() {
   return (
     <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-[var(--ry-blue-900)] via-[var(--ry-blue-700)] to-[var(--ry-blue-500)] text-white p-10">
-      {/* grid pattern */}
+      {/* padrão de grade */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.12]"
         style={{
@@ -17,7 +17,7 @@ export function AuthShowcase() {
           backgroundSize: "40px 40px",
         }}
       />
-      {/* glow blobs */}
+      {/* manchas de brilho */}
       <div className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full bg-[var(--ry-accent)]/40 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -right-16 h-96 w-96 rounded-full bg-[var(--ry-blue-500)]/60 blur-3xl" />
 
@@ -34,10 +34,10 @@ export function AuthShowcase() {
         </div>
       </div>
 
-      {/* Floating agenda mock */}
+      {/* Simulação de agenda flutuante */}
       <div className="relative z-10 my-8 flex-1 flex items-center justify-center">
         <div className="relative w-full max-w-md">
-          {/* main card */}
+          {/* card principal */}
           <div className="rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div className="text-xs uppercase tracking-widest text-white/70">
@@ -69,7 +69,7 @@ export function AuthShowcase() {
             </div>
           </div>
 
-          {/* floating chip 1 */}
+          {/* chip flutuante 1 */}
           <div className="absolute -top-6 -right-4 rounded-xl bg-white text-[var(--ry-ink)] px-3 py-2 shadow-xl flex items-center gap-2 rotate-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--ok-bg)] text-[var(--ok)]">
               <Sparkles className="h-4 w-4" />
@@ -82,7 +82,7 @@ export function AuthShowcase() {
             </div>
           </div>
 
-          {/* floating chip 2 */}
+          {/* chip flutuante 2 */}
           <div className="absolute -bottom-6 -left-6 rounded-xl bg-white text-[var(--ry-ink)] px-3 py-2 shadow-xl flex items-center gap-2 -rotate-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--info-bg)] text-[var(--info)]">
               <Users className="h-4 w-4" />
@@ -95,7 +95,7 @@ export function AuthShowcase() {
             </div>
           </div>
 
-          {/* floating chip 3 */}
+          {/* chip flutuante 3 */}
           <div className="absolute top-1/2 -left-10 rounded-xl bg-[var(--ry-accent)] text-white px-3 py-2 shadow-xl flex items-center gap-2 -rotate-6">
             <Clock className="h-4 w-4" />
             <span className="text-xs font-semibold">Próximo em 12min</span>
@@ -103,7 +103,7 @@ export function AuthShowcase() {
         </div>
       </div>
 
-      {/* Footer quote */}
+      {/* Citação do rodapé */}
       <div className="relative z-10">
         <p className="font-display text-2xl leading-tight max-w-sm">
           "Menos planilhas. Mais clientes na cadeira."

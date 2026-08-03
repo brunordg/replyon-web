@@ -23,7 +23,7 @@ export const staffApi = {
     apiClient.post<StaffResponse>(`${base}/${id}/activate`),
   deactivate: (id: number) =>
     apiClient.post<StaffResponse>(`${base}/${id}/deactivate`),
-  // Service assignment
+  // Atribuição de serviços
   listServices: (staffId: number) =>
     apiClient.get<StaffServiceResponse>(`${base}/${staffId}/services`),
   assignServices: (staffId: number, body: AssignServicesRequest) =>

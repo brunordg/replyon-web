@@ -19,7 +19,7 @@ import { useConversationThread, useResolveHandoff, useSendHumanReply } from "@/l
 import { AvailabilityLookupPopover } from "@/components/availability-lookup-popover";
 import { cn } from "@/lib/utils";
 
-/** Right-pane thread view: history + composer + "encerrar atendimento". */
+/** Visualização da conversa no painel direito: histórico + compositor + "encerrar atendimento". */
 export function ConversationThreadPane({
   phone,
   customerId,
@@ -39,9 +39,9 @@ export function ConversationThreadPane({
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousPhoneRef = useRef(phone);
 
-  // Jumps to the newest message on load, on every poll while already near the
-  // bottom, and always when switching to a different conversation — but not
-  // when staff has scrolled up to read history and a poll brings new rows in.
+  // Pula para a mensagem mais recente ao carregar, em cada polling enquanto já
+  // estiver perto do fim, e sempre ao trocar de conversa — mas não quando o
+  // atendente rolou para cima para ler o histórico e um polling traz novas linhas.
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
@@ -58,8 +58,8 @@ export function ConversationThreadPane({
     sendReply.mutate(reply.trim(), { onSuccess: () => setReply("") });
   }
 
-  // Appends rather than replaces: an attendant may already be mid-message
-  // when they look up availability.
+  // Concatena em vez de substituir: o atendente pode já estar no meio de uma
+  // mensagem quando consulta a disponibilidade.
   function handleInsertAvailability(text: string) {
     setReply((prev) => (prev.trim() ? `${prev}\n${text}` : text));
   }

@@ -38,7 +38,7 @@ import type { ScheduleDay, StaffResponse } from "@/lib/api/types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Interval presets, in minutes. The backend accepts anything from 5 to 480. */
+/** Predefinições de intervalo, em minutos. O backend aceita qualquer valor de 5 a 480. */
 const INTERVALS = [15, 20, 30, 45, 60, 90, 120];
 
 export function EditarProfissionalDialog({
@@ -71,7 +71,7 @@ export function EditarProfissionalDialog({
   const { data: currentServiceIds, isLoading: currentLoading } = useStaffServices(staff.id, open);
   const { data: schedule, isLoading: scheduleLoading } = useStaffSchedule(staff.id, open);
 
-  // Reseed text fields whenever the dialog opens.
+  // Repopula os campos de texto sempre que o diálogo abre.
   useEffect(() => {
     if (open) {
       setTab(defaultTab);
@@ -84,7 +84,7 @@ export function EditarProfissionalDialog({
     }
   }, [open, staff, defaultTab]);
 
-  // Seed the selected services once the current assignments load (once per open).
+  // Popula os serviços selecionados quando as atribuições atuais carregam (uma vez por abertura).
   const servicesSeeded = useRef(false);
   useEffect(() => {
     if (!open) {
@@ -97,8 +97,8 @@ export function EditarProfissionalDialog({
     }
   }, [open, currentServiceIds]);
 
-  // Seed the week once the schedule loads. A staff member with no schedule yet
-  // keeps the default week.
+  // Popula a semana quando a agenda carrega. Um profissional que ainda não tem
+  // agenda mantém a semana padrão.
   const weekSeeded = useRef(false);
   useEffect(() => {
     if (!open) {
@@ -133,7 +133,7 @@ export function EditarProfissionalDialog({
     const nextWeekErrors = validateWeek(week);
     setWeekErrors(nextWeekErrors);
 
-    // Surface whichever tab holds the first problem.
+    // Exibe a aba que contém o primeiro problema.
     if (Object.keys(nextErrors).length > 0) {
       setTab("dados");
       return;

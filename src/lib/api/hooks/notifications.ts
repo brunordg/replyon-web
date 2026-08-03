@@ -4,9 +4,9 @@ import { notificationsApi } from "../notifications";
 const KEY = "notifications";
 
 /**
- * Polls for recent WhatsApp-automated notifications. Errors are left in
- * query state (not thrown) — the bell should degrade to "nothing new"
- * rather than break the dashboard if the endpoint is unavailable.
+ * Faz polling de notificações recentes automatizadas pelo WhatsApp. Erros são
+ * deixados no estado da query (não lançados) — o sino deve degradar para
+ * "nada novo" em vez de quebrar o dashboard se o endpoint estiver indisponível.
  */
 export function useNotifications() {
   return useQuery({

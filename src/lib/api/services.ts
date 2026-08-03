@@ -22,7 +22,7 @@ export const servicesApi = {
     apiClient.post<ServiceResponse>(`${base}/${id}/activate`),
   deactivate: (id: number) =>
     apiClient.post<ServiceResponse>(`${base}/${id}/deactivate`),
-  /** Staff ids assigned to a service. */
+  /** Ids de profissionais atribuídos a um serviço. */
   staff: (serviceId: number) =>
     apiClient.get<StaffServiceResponse>(`${base}/${serviceId}/staff`),
 };

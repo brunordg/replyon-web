@@ -11,9 +11,9 @@ function errMessage(err: unknown, fallback: string): string {
 }
 
 /**
- * The schedule of a staff member, or `null` when they have none yet.
- * The backend allows only one schedule per (staff, tenant), so we read the
- * first item of the list endpoint instead of paging.
+ * A agenda de um profissional, ou `null` quando ele ainda não tem nenhuma.
+ * O backend permite apenas uma agenda por (profissional, tenant), então lemos
+ * o primeiro item do endpoint de listagem em vez de paginar.
  */
 export function useStaffSchedule(staffId: number | undefined, enabled = true) {
   return useQuery({
@@ -25,8 +25,8 @@ export function useStaffSchedule(staffId: number | undefined, enabled = true) {
 }
 
 /**
- * Saves a staff member's working hours: creates the schedule on first save,
- * updates it afterwards. `scheduleId` tells the two apart.
+ * Salva o horário de trabalho de um profissional: cria a agenda no primeiro
+ * salvamento, atualiza depois disso. `scheduleId` distingue os dois casos.
  */
 export function useSaveSchedule() {
   const qc = useQueryClient();

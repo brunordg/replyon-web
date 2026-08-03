@@ -9,7 +9,7 @@ import type {
 const base = (staffId: number) => `/v1/staff/${staffId}/blocks`;
 
 export const timeBlocksApi = {
-  /** `startDate`/`endDate` are inclusive "YYYY-MM-DD"; both are optional. */
+  /** `startDate`/`endDate` são "YYYY-MM-DD" inclusivos; ambos são opcionais. */
   list: (
     staffId: number,
     params?: { page?: number; size?: number; startDate?: string; endDate?: string },

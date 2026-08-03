@@ -14,7 +14,7 @@ export const availabilityApi = {
       params,
       signal,
     ),
-  /** NOTE: backend currently returns an empty slots list (stub). */
+  /** NOTA: o backend atualmente retorna uma lista de horários vazia (stub). */
   dailyAgenda: (staffId: number, params: { date: string }, signal?: AbortSignal) =>
     apiClient.get<DailyAgendaResponse>(
       `${base}/staff/${staffId}/daily-agenda`,

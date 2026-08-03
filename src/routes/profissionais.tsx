@@ -85,9 +85,9 @@ function ProfissionaisPage() {
 }
 
 /**
- * The week/rating/occupancy metrics are not exposed by the API yet, so the
- * tiles render an em dash placeholder rather than a stand-in number — a fake
- * occupancy rate would be indistinguishable from a real one.
+ * As métricas de semana/avaliação/ocupação ainda não são expostas pela API,
+ * então os tiles renderizam um travessão como placeholder em vez de um número
+ * fictício — uma taxa de ocupação falsa seria indistinguível de uma real.
  */
 function ProfissionalCard({ staff }: { staff: StaffResponse }) {
   return (

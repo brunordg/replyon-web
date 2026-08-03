@@ -23,14 +23,16 @@ export function useAvailableSlots(
 }
 
 /**
- * Available start times for a service on a date, per staff member.
+ * Horários de início disponíveis para um serviço numa data, por profissional.
  *
- * The slots endpoint answers for one staff at a time, so booking "by time
- * first" — pick 09:00, then see who is free — needs a fan-out over every staff
- * eligible for the service. `allSlots` is the union (any time at least one
- * professional can take), and `staffAvailableAt` answers the reverse question.
+ * O endpoint de horários responde para um profissional por vez, então agendar
+ * "pelo horário primeiro" — escolher 09:00 e depois ver quem está livre —
+ * precisa de um fan-out sobre todo profissional elegível para o serviço.
+ * `allSlots` é a união (qualquer horário que pelo menos um profissional
+ * consiga atender), e `staffAvailableAt` responde a pergunta inversa.
  *
- * Times are normalized to "HH:mm" here so callers can compare them directly.
+ * Os horários são normalizados para "HH:mm" aqui para que quem chama possa
+ * compará-los diretamente.
  */
 export function useSlotsByStaff(
   staffIds: number[],
@@ -49,25 +51,26 @@ export function useSlotsByStaff(
           signal,
         ),
       enabled: active,
-      // A staff member with no schedule is a deterministic answer, not a blip —
-      // the default 3 retries with backoff just stretch it into fake loading.
+      // Um profissional sem agenda é uma resposta determinística, não uma
+      // falha passageira — as 3 tentativas padrão com backoff só esticariam
+      // isso num carregamento falso.
       retry: 1,
     })),
   });
 
-  // A fan-out must not be held hostage by its slowest or most broken member:
-  // one staff without a schedule cannot be allowed to hide everyone else's
-  // slots. So "loading" means *nothing* has arrived yet, and "error" means
-  // *everything* failed. A partial failure degrades to that staff simply not
-  // being offered.
+  // Um fan-out não pode ficar refém do membro mais lento ou mais quebrado: um
+  // profissional sem agenda não pode esconder os horários de todos os outros.
+  // Então "loading" significa que *nada* chegou ainda, e "error" significa
+  // que *tudo* falhou. Uma falha parcial degrada para aquele profissional
+  // simplesmente não ser oferecido.
   const hasAny = results.some((r) => r.data);
   const isLoading = active && !hasAny && results.some((r) => r.isLoading);
   const isError = active && results.length > 0 && results.every((r) => r.isError);
-  /** Staff whose availability could not be read — silently absent from the lists. */
+  /** Profissionais cuja disponibilidade não pôde ser lida — silenciosamente ausentes das listas. */
   const unavailableCount = results.filter((r) => r.isError).length;
   const serviceDurationMinutes = results.find((r) => r.data)?.data?.serviceDurationMinutes;
 
-  // Memoized on contents — `useQueries` returns a fresh array every render.
+  // Memoizado pelo conteúdo — `useQueries` retorna um array novo a cada renderização.
   const signature = JSON.stringify(
     staffIds.map((id, i) => [
       id,
@@ -87,7 +90,7 @@ export function useSlotsByStaff(
     return { slotsByStaff: map, allSlots: [...union].sort() };
   }, [signature]);
 
-  /** Ids of the staff that can start the service at `time`. */
+  /** Ids dos profissionais que podem iniciar o serviço em `time`. */
   const staffAvailableAt = useMemo(
     () => (time: string) =>
       [...slotsByStaff.entries()].filter(([, times]) => times.includes(time)).map(([id]) => id),

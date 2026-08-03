@@ -21,7 +21,7 @@ import { ENTITY_STATUS_LABEL, ENTITY_STATUS_STYLE } from "@/lib/api/status";
 import { cn, colorFromString, initials } from "@/lib/utils";
 import type { SearchHit } from "@/lib/api/types";
 
-/** Where each result type sends you, with the term carried over as a filter. */
+/** Para onde cada tipo de resultado te leva, com o termo levado adiante como filtro. */
 const DESTINATION = {
   customers: { to: "/clientes", heading: "Clientes", all: "Ver todos os clientes" },
   staff: { to: "/profissionais", heading: "Profissionais", all: "Ver todos os profissionais" },
@@ -29,7 +29,7 @@ const DESTINATION = {
 } as const;
 
 type ResultKind = keyof typeof DESTINATION;
-/** Kept as literals so the router type-checks the destination and its search param. */
+/** Mantido como literais para que o router valide o tipo do destino e seu parâmetro de busca. */
 type Destination = (typeof DESTINATION)[ResultKind]["to"];
 
 export function Topbar() {
@@ -53,8 +53,8 @@ export function Topbar() {
   const { data: handoffsData } = useHandoffConversations();
   const handoffCount = handoffsData?.length ?? 0;
 
-  // Ctrl/⌘+K from anywhere. Safe to bind once: Topbar mounts a single time in
-  // AppShell, above the router outlet.
+  // Ctrl/⌘+K a partir de qualquer lugar. Seguro vincular uma única vez: Topbar
+  // é montado uma única vez no AppShell, acima do outlet do router.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -125,8 +125,8 @@ export function Topbar() {
                       onSelect={() => go(DESTINATION[kind].to)}
                     />
                   ))}
-                  {/* The API caps each type, so there is no signal that more
-                      exist — this is that signal, and it costs no extra call. */}
+                  {/* A API limita cada tipo, então não há sinal de que existem mais —
+                      este é esse sinal, e não custa nenhuma chamada extra. */}
                   <CommandItem
                     value={`${kind}-all`}
                     onSelect={() => go(DESTINATION[kind].to)}
@@ -213,8 +213,8 @@ function ResultItem({
   onSelect: () => void;
 }) {
   return (
-    // The value must be unique across groups: names collide between types and
-    // cmdk keys its selection by value.
+    // O value precisa ser único entre os grupos: nomes colidem entre tipos e
+    // o cmdk indexa sua seleção pelo value.
     <CommandItem value={`${kind}-${hit.id}`} onSelect={onSelect} className="gap-2.5">
       <span
         className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-semibold text-white"

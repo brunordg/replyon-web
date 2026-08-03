@@ -71,7 +71,7 @@ const STATUS_CLS: Record<AppointmentStatus, EvtCls | null> = {
   PENDING: "warn",
   COMPLETED: "done",
   NO_SHOW: "danger",
-  CANCELLED: null, // never occupies the grid
+  CANCELLED: null, // nunca ocupa espaço na grade
 };
 
 const evtStyles: Record<EvtCls, string> = {
@@ -96,7 +96,7 @@ const FILTER_STATUSES: AppointmentStatus[] = [
   "CANCELLED",
 ];
 
-/** Radix reserves "" for the placeholder, so "all" needs its own sentinel. */
+/** O Radix reserva "" para o placeholder, então "todos" precisa de seu próprio valor sentinela. */
 const ALL = "__all__";
 
 interface Evt {
@@ -151,14 +151,14 @@ function AgendaPage() {
     setStatusFilter(ALL);
   }
 
-  /** Filters apply before the grid so the count and the cells always agree. */
+  /** Os filtros são aplicados antes da grade para que a contagem e as células sempre coincidam. */
   const visible = useMemo(() => {
     const inRange = new Set(dayKeys);
     return appointments.filter((a: AppointmentResponse) => {
       if (!inRange.has(a.appointmentDateTime.slice(0, 10))) return false;
       if (selectedStaff.size > 0 && !selectedStaff.has(a.staffId)) return false;
       if (serviceFilter !== ALL && String(a.serviceId) !== serviceFilter) return false;
-      // Cancelled is hidden unless explicitly asked for — it occupies no time.
+      // Cancelados ficam ocultos a menos que sejam pedidos explicitamente — não ocupam tempo.
       if (statusFilter === ALL) return a.status !== "CANCELLED";
       return a.status === statusFilter;
     });
@@ -172,8 +172,8 @@ function AgendaPage() {
         const hh = Number(a.appointmentDateTime.slice(11, 13));
         const mm = Number(a.appointmentDateTime.slice(14, 16));
         const service = serviceMap.get(a.serviceId);
-        // Prefer the appointment's own end — it is authoritative even if the
-        // service duration changed after the booking.
+        // Prefere o horário de término do próprio agendamento — ele é definitivo
+        // mesmo que a duração do serviço tenha mudado depois do agendamento.
         const startMs = new Date(a.appointmentDateTime).getTime();
         const endMs = new Date(a.endDateTime).getTime();
         const durationHours =
@@ -226,7 +226,7 @@ function AgendaPage() {
       delta: metrics
         ? formatCountDelta(metrics.noShowsMonth.value, metrics.noShowsMonth.previous)
         : "—",
-      // Fewer no-shows is good news, so the colour is inverted on purpose.
+      // Menos faltas é uma boa notícia, então a cor é invertida de propósito.
       direction: !metrics
         ? ("flat" as const)
         : metrics.noShowsMonth.value < metrics.noShowsMonth.previous
@@ -428,7 +428,7 @@ function FilterSelect({
   );
 }
 
-/** Hour-by-hour columns, one per day — the Semana view. */
+/** Colunas hora a hora, uma por dia — a visão Semana. */
 function TimeGrid({
   days,
   today,
@@ -440,9 +440,9 @@ function TimeGrid({
   events: Evt[];
   onDrillDown: (day: Date) => void;
 }) {
-  // Two professionals booked at the same hour must sit side by side; stacking
-  // them absolutely would hide all but one. Past MAX_LANES the blocks would be
-  // too thin to read, so the remainder becomes a "+N mais" chip.
+  // Dois profissionais agendados na mesma hora precisam ficar lado a lado;
+  // empilhá-los de forma absoluta esconderia todos menos um. Além de MAX_LANES
+  // os blocos ficariam finos demais para ler, então o restante vira um chip "+N mais".
   const layoutByDay = useMemo(() => {
     const byDay = new Map<string, Evt[]>();
     for (const e of events) {
@@ -496,8 +496,9 @@ function TimeGrid({
             {days.map((day) => {
               const key = dateKey(day);
               const cellEvents = events.filter((e) => e.day === key && Math.floor(e.start) === h);
-              // Lanes are computed over the whole day, not this cell, so an
-              // event starting at 14:30 shares a width with one starting at 14:00.
+              // As faixas (lanes) são calculadas para o dia inteiro, não para esta
+              // célula, então um evento iniciando às 14:30 compartilha a largura
+              // com um que começa às 14:00.
               const layout = layoutByDay.get(key);
               const hiddenHere = layout?.overflow.get(h) ?? [];
               return (
@@ -512,8 +513,8 @@ function TimeGrid({
                   {hiddenHere.length > 0 && (
                     <OverflowChip
                       hidden={hiddenHere}
-                      // The Dia view splits by professional, which is exactly
-                      // what resolves this overlap — a drill-down, not a dead end.
+                      // A visão Dia separa por profissional, que é exatamente
+                      // o que resolve essa sobreposição — um drill-down, não um beco sem saída.
                       onClick={() => onDrillDown(day)}
                     />
                   )}
@@ -528,8 +529,8 @@ function TimeGrid({
 }
 
 /**
- * Stands in for appointments dropped past MAX_LANES. Mirrors the "+N mais" chip
- * MonthGrid already uses. Interactive when there is somewhere to drill into.
+ * Representa os agendamentos descartados além de MAX_LANES. Espelha o chip
+ * "+N mais" que o MonthGrid já usa. É interativo quando há para onde fazer drill-down.
  */
 function OverflowChip({ hidden, onClick }: { hidden: Evt[]; onClick?: () => void }) {
   const title = hidden.map((e) => `${e.startLabel} · ${e.customer} · ${e.detail}`).join("\n");
@@ -554,11 +555,11 @@ function OverflowChip({ hidden, onClick }: { hidden: Evt[]; onClick?: () => void
   );
 }
 
-/** One appointment on the time grid, narrowed to its lane when it overlaps another. */
+/** Um agendamento na grade de horários, estreitado à sua faixa quando se sobrepõe a outro. */
 function EventBlock({ evt, lane }: { evt: Evt; lane?: { index: number; of: number } }) {
   const { left, width } = laneStyle(lane);
-  // Detail is dropped in steps as the block narrows: at 3 lanes it is ~63px,
-  // where even "14:00 – 15:00" no longer fits. The title keeps the full text.
+  // O detalhe é removido em etapas conforme o bloco estreita: com 3 faixas fica
+  // com ~63px, onde nem mesmo "14:00 – 15:00" cabe mais. O title mantém o texto completo.
   const of = lane?.of ?? 1;
   return (
     <div
@@ -584,9 +585,9 @@ function EventBlock({ evt, lane }: { evt: Evt; lane?: { index: number; of: numbe
 }
 
 /**
- * The Dia view: one column per professional, so simultaneous appointments run
- * in parallel instead of overlapping. Lanes still apply inside a column as a
- * safety net for same-professional overlaps.
+ * A visão Dia: uma coluna por profissional, para que agendamentos simultâneos
+ * fiquem em paralelo em vez de se sobreporem. As faixas ainda se aplicam dentro
+ * de uma coluna como uma rede de segurança para sobreposições do mesmo profissional.
  */
 function DayGrid({
   day,
@@ -613,8 +614,9 @@ function DayGrid({
   }, [dayEvents]);
 
   /**
-   * Active staff plus anyone holding an appointment today who is no longer in
-   * the list (a deactivated professional) — otherwise their bookings vanish.
+   * Profissionais ativos mais qualquer um que tenha um agendamento hoje e não
+   * esteja mais na lista (um profissional desativado) — caso contrário seus
+   * agendamentos desapareceriam.
    */
   const candidates = useMemo(() => {
     const known = new Set(staff.map((s) => s.id));
@@ -712,7 +714,7 @@ function DayGrid({
                       .map((e) => (
                         <EventBlock key={e.id} evt={e} lane={col.lanes.get(e)} />
                       ))}
-                    {/* Already split by professional — nowhere further to drill. */}
+                    {/* Já dividido por profissional — não há mais para onde fazer drill-down. */}
                     {hiddenHere.length > 0 && <OverflowChip hidden={hiddenHere} />}
                   </div>
                 );
@@ -725,7 +727,7 @@ function DayGrid({
   );
 }
 
-/** Calendar cells with compact chips — the Mês view; an hour grid would not fit. */
+/** Células de calendário com chips compactos — a visão Mês; uma grade de horas não caberia. */
 function MonthGrid({
   days,
   anchor,
