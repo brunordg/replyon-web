@@ -10,6 +10,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { initials } from "@/lib/utils";
@@ -18,6 +19,7 @@ const menuMain = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/agendamentos", label: "Agendamentos", icon: ListChecks },
+  { to: "/atendimento", label: "Atendimento", icon: MessageCircle },
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/profissionais", label: "Profissionais", icon: UserCog },
   { to: "/servicos", label: "Serviços", icon: Scissors },

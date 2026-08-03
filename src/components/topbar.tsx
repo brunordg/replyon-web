@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { MIN_SEARCH_LENGTH, useGlobalSearch } from "@/lib/api/hooks/search";
 import { useNotifications } from "@/lib/api/hooks/notifications";
+import { useHandoffConversations } from "@/lib/api/hooks/conversations";
 import { ENTITY_STATUS_LABEL, ENTITY_STATUS_STYLE } from "@/lib/api/status";
 import { cn, colorFromString, initials } from "@/lib/utils";
 import type { SearchHit } from "@/lib/api/types";
@@ -48,6 +49,9 @@ export function Topbar() {
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
     return notifications.filter((n) => new Date(n.createdAt).getTime() >= dayAgo).length;
   }, [notifications]);
+
+  const { data: handoffsData } = useHandoffConversations();
+  const handoffCount = handoffsData?.length ?? 0;
 
   // Ctrl/⌘+K from anywhere. Safe to bind once: Topbar mounts a single time in
   // AppShell, above the router outlet.
@@ -138,8 +142,17 @@ export function Topbar() {
       </CommandDialog>
 
       <div className="ml-auto flex items-center gap-3.5">
-        <button className="grid h-9 w-9 place-items-center rounded-[10px] border border-ry-line bg-card text-ry-ink-soft hover:border-ry-blue-500 hover:text-ry-blue-600 transition-colors">
+        <button
+          onClick={() => navigate({ to: "/atendimento" })}
+          title="Atendimento"
+          className="relative grid h-9 w-9 place-items-center rounded-[10px] border border-ry-line bg-card text-ry-ink-soft hover:border-ry-blue-500 hover:text-ry-blue-600 transition-colors"
+        >
           <Mail className="h-4 w-4" />
+          {handoffCount > 0 && (
+            <span className="absolute -top-1 -right-1 rounded-full border-2 border-white bg-ry-accent px-1 text-[9px] font-semibold text-white">
+              {handoffCount > 9 ? "9+" : handoffCount}
+            </span>
+          )}
         </button>
         <Popover>
           <PopoverTrigger asChild>

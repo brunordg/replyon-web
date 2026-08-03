@@ -14,7 +14,6 @@ export function useWhatsAppStatus(companyId: number | undefined) {
     queryKey: [KEY, companyId],
     queryFn: ({ signal }) => whatsappApi.status(companyId as number, signal),
     enabled: companyId != null,
-    refetchInterval: (query) => (query.state.data?.status === "CONNECTED" ? false : 3000),
   });
 }
 

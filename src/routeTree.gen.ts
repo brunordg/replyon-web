@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
+import { Route as AtendimentoRouteImport } from './routes/atendimento'
 import { Route as BloqueiosRouteImport } from './routes/bloqueios'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
@@ -34,6 +35,11 @@ const AgendaRoute = AgendaRouteImport.update({
 const AgendamentosRoute = AgendamentosRouteImport.update({
   id: '/agendamentos',
   path: '/agendamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AtendimentoRoute = AtendimentoRouteImport.update({
+  id: '/atendimento',
+  path: '/atendimento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BloqueiosRoute = BloqueiosRouteImport.update({
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/agendamentos': typeof AgendamentosRoute
+  '/atendimento': typeof AtendimentoRoute
   '/bloqueios': typeof BloqueiosRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/agendamentos': typeof AgendamentosRoute
+  '/atendimento': typeof AtendimentoRoute
   '/bloqueios': typeof BloqueiosRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/agendamentos': typeof AgendamentosRoute
+  '/atendimento': typeof AtendimentoRoute
   '/bloqueios': typeof BloqueiosRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agenda'
     | '/agendamentos'
+    | '/atendimento'
     | '/bloqueios'
     | '/clientes'
     | '/configuracoes'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agenda'
     | '/agendamentos'
+    | '/atendimento'
     | '/bloqueios'
     | '/clientes'
     | '/configuracoes'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agenda'
     | '/agendamentos'
+    | '/atendimento'
     | '/bloqueios'
     | '/clientes'
     | '/configuracoes'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgendaRoute: typeof AgendaRoute
   AgendamentosRoute: typeof AgendamentosRoute
+  AtendimentoRoute: typeof AtendimentoRoute
   BloqueiosRoute: typeof BloqueiosRoute
   ClientesRoute: typeof ClientesRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
@@ -194,6 +207,13 @@ declare module '@tanstack/react-router' {
       path: '/agendamentos'
       fullPath: '/agendamentos'
       preLoaderRoute: typeof AgendamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/atendimento': {
+      id: '/atendimento'
+      path: '/atendimento'
+      fullPath: '/atendimento'
+      preLoaderRoute: typeof AtendimentoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bloqueios': {
@@ -259,6 +279,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
   AgendamentosRoute: AgendamentosRoute,
+  AtendimentoRoute: AtendimentoRoute,
   BloqueiosRoute: BloqueiosRoute,
   ClientesRoute: ClientesRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,

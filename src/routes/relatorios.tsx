@@ -10,8 +10,13 @@ import { useStaffList } from "@/lib/api/hooks/staff";
 import { useServices } from "@/lib/api/hooks/services";
 import { useAllAppointmentsByStaff } from "@/lib/api/hooks/appointments";
 import { formatBRL } from "@/lib/utils";
-import { PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "@/lib/api/status";
-import type { AppointmentResponse, PaymentMethod } from "@/lib/api/types";
+import {
+  APPOINTMENT_ORIGIN_LABEL,
+  APPOINTMENT_ORIGINS,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABEL,
+} from "@/lib/api/status";
+import type { AppointmentOrigin, AppointmentResponse, PaymentMethod } from "@/lib/api/types";
 
 // Fixed, semantic palette reused from the app's existing status colors —
 // keeps the new pie chart visually consistent instead of inventing new hues.
@@ -27,6 +32,18 @@ const PAYMENT_METHOD_CHART_CONFIG: ChartConfig = {
   PIX: { label: PAYMENT_METHOD_LABEL.PIX, color: PAYMENT_METHOD_COLOR.PIX },
   CREDIT_CARD: { label: PAYMENT_METHOD_LABEL.CREDIT_CARD, color: PAYMENT_METHOD_COLOR.CREDIT_CARD },
   DEBIT_CARD: { label: PAYMENT_METHOD_LABEL.DEBIT_CARD, color: PAYMENT_METHOD_COLOR.DEBIT_CARD },
+};
+
+// WhatsApp keeps its brand green for instant recognition; manual bookings get
+// a neutral tone so it doesn't compete with the payment palette above.
+const ORIGIN_COLOR: Record<AppointmentOrigin, string> = {
+  WHATSAPP: "#25D366",
+  MANUAL: "#64748B",
+};
+
+const ORIGIN_CHART_CONFIG: ChartConfig = {
+  WHATSAPP: { label: APPOINTMENT_ORIGIN_LABEL.WHATSAPP, color: ORIGIN_COLOR.WHATSAPP },
+  MANUAL: { label: APPOINTMENT_ORIGIN_LABEL.MANUAL, color: ORIGIN_COLOR.MANUAL },
 };
 
 export const Route = createFileRoute("/relatorios")({
@@ -128,6 +145,25 @@ function RelatoriosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments]);
 
+  // Current-month booking channel split — same isRealized basis as the
+  // "Atendimentos (mês)" KPI, so the two segments sum to that count.
+  const byOrigin = useMemo(() => {
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const counts: Record<AppointmentOrigin, number> = { WHATSAPP: 0, MANUAL: 0 };
+    for (const a of appointments) {
+      if (!isRealized(a) || a.appointmentDateTime.slice(0, 7) !== monthKey) continue;
+      counts[a.origin]++;
+    }
+    return APPOINTMENT_ORIGINS.map((origin) => ({
+      origin,
+      name: APPOINTMENT_ORIGIN_LABEL[origin],
+      value: counts[origin],
+      fill: ORIGIN_COLOR[origin],
+    })).filter((row) => row.value > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointments]);
+
   // Current-month KPIs.
   const kpis = useMemo(() => {
     const now = new Date();
@@ -214,59 +250,113 @@ function RelatoriosPage() {
         </Card>
       </div>
 
-      <Card className="mt-4 rounded-[14px] border-ry-line p-5">
-        <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
-          Faturamento por forma de pagamento
-        </span>
-        {byPaymentMethod.length === 0 ? (
-          <p className="mt-4 text-[12px] text-ry-ink-soft">Sem pagamentos registrados neste mês.</p>
-        ) : (
-          <div className="mt-4 grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
-            <ChartContainer config={PAYMENT_METHOD_CHART_CONFIG} className="mx-auto aspect-square max-h-52">
-              <PieChart>
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      hideLabel
-                      nameKey="method"
-                      formatter={(value) => formatBRL(Number(value))}
-                    />
-                  }
-                />
-                <Pie
-                  data={byPaymentMethod}
-                  dataKey="value"
-                  nameKey="method"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={2}
-                >
-                  {byPaymentMethod.map((row) => (
-                    <Cell key={row.method} fill={row.fill} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ChartContainer>
-
-            <ul className="space-y-3">
-              {byPaymentMethod.map((row, i) => (
-                <li key={row.method} className="flex items-center gap-3">
-                  <div
-                    className="grid h-7 w-7 place-items-center rounded-lg text-[11px] font-medium text-white"
-                    style={{ background: row.fill }}
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="rounded-[14px] border-ry-line p-5">
+          <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
+            Faturamento por forma de pagamento
+          </span>
+          {byPaymentMethod.length === 0 ? (
+            <p className="mt-4 text-[12px] text-ry-ink-soft">Sem pagamentos registrados neste mês.</p>
+          ) : (
+            <div className="mt-4 grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
+              <ChartContainer config={PAYMENT_METHOD_CHART_CONFIG} className="mx-auto aspect-square max-h-52">
+                <PieChart>
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        hideLabel
+                        nameKey="method"
+                        formatter={(value) => formatBRL(Number(value))}
+                      />
+                    }
+                  />
+                  <Pie
+                    data={byPaymentMethod}
+                    dataKey="value"
+                    nameKey="method"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
                   >
-                    {i + 1}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-[12px] font-medium">{row.name}</div>
-                  </div>
-                  <div className="text-[12px] font-medium">{formatBRL(row.value)}</div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </Card>
+                    {byPaymentMethod.map((row) => (
+                      <Cell key={row.method} fill={row.fill} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+
+              <ul className="space-y-3">
+                {byPaymentMethod.map((row, i) => (
+                  <li key={row.method} className="flex items-center gap-3">
+                    <div
+                      className="grid h-7 w-7 place-items-center rounded-lg text-[11px] font-medium text-white"
+                      style={{ background: row.fill }}
+                    >
+                      {i + 1}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-[12px] font-medium">{row.name}</div>
+                    </div>
+                    <div className="text-[12px] font-medium">{formatBRL(row.value)}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
+
+        <Card className="rounded-[14px] border-ry-line p-5">
+          <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
+            Origem dos agendamentos
+          </span>
+          {byOrigin.length === 0 ? (
+            <p className="mt-4 text-[12px] text-ry-ink-soft">Sem atendimentos registrados neste mês.</p>
+          ) : (
+            <div className="mt-4 grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
+              <ChartContainer config={ORIGIN_CHART_CONFIG} className="mx-auto aspect-square max-h-52">
+                <PieChart>
+                  <ChartTooltip
+                    content={<ChartTooltipContent hideLabel nameKey="origin" />}
+                  />
+                  <Pie
+                    data={byOrigin}
+                    dataKey="value"
+                    nameKey="origin"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                  >
+                    {byOrigin.map((row) => (
+                      <Cell key={row.origin} fill={row.fill} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+
+              <ul className="space-y-3">
+                {byOrigin.map((row) => {
+                  const total = byOrigin.reduce((s, r) => s + r.value, 0);
+                  const pct = total ? Math.round((row.value / total) * 100) : 0;
+                  return (
+                    <li key={row.origin} className="flex items-center gap-3">
+                      <div
+                        className="h-3 w-3 shrink-0 rounded-full"
+                        style={{ background: row.fill }}
+                      />
+                      <div className="flex-1">
+                        <div className="text-[12px] font-medium">{row.name}</div>
+                      </div>
+                      <div className="text-[12px] font-medium">
+                        {row.value} <span className="text-ry-ink-soft">({pct}%)</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </Card>
+      </div>
     </>
   );
 }

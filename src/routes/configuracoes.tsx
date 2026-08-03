@@ -51,15 +51,22 @@ const SECTIONS = [
 function ConfigPage() {
   const { data: company, isLoading } = useMyCompany();
   const updateCompany = useUpdateCompany();
-  const { data: whatsapp } = useWhatsAppStatus(company?.id);
+  const { data: whatsapp, refetch: refetchWhatsAppStatus } = useWhatsAppStatus(company?.id);
   const connectWhatsApp = useConnectWhatsApp(company?.id);
   const disconnectWhatsApp = useDisconnectWhatsApp(company?.id);
   const requestPairingCode = useRequestPairingCode(company?.id);
 
   const [whatsappTab, setWhatsappTab] = useState<"qr" | "code">("qr");
+  const [qrCode, setQrCode] = useState<string | null>(null);
   const [pairingPhone, setPairingPhone] = useState("");
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [pairingPhoneError, setPairingPhoneError] = useState<string | null>(null);
+
+  const handleConnectWhatsApp = () => {
+    connectWhatsApp.mutate(undefined, {
+      onSuccess: (data) => setQrCode(data.qrCodeBase64),
+    });
+  };
 
   const handleWhatsappTabChange = (value: string) => {
     setWhatsappTab(value as "qr" | "code");
@@ -329,9 +336,9 @@ function ConfigPage() {
               <TabsContent value="qr">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-[200px_1fr]">
                   <div className="flex h-[200px] items-center justify-center rounded-[10px] border border-ry-line bg-ry-bg">
-                    {whatsapp?.status === "CONNECTING" && whatsapp.qrCodeBase64 ? (
+                    {whatsapp?.status === "CONNECTING" && qrCode ? (
                       <img
-                        src={`data:image/png;base64,${whatsapp.qrCodeBase64}`}
+                        src={`data:image/png;base64,${qrCode}`}
                         alt="QR Code para conectar o WhatsApp"
                         className="h-full w-full rounded-[10px] object-contain p-2"
                       />
@@ -458,7 +465,11 @@ function ConfigPage() {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => disconnectWhatsApp.mutate()}
+                        onClick={() =>
+                          disconnectWhatsApp.mutate(undefined, {
+                            onSuccess: () => setQrCode(null),
+                          })
+                        }
                         disabled={disconnectWhatsApp.isPending}
                         className={buttonVariants({ variant: "destructive" })}
                       >
@@ -471,14 +482,25 @@ function ConfigPage() {
                   </AlertDialogContent>
                 </AlertDialog>
               ) : whatsappTab === "qr" ? (
-                <Button
-                  onClick={() => connectWhatsApp.mutate()}
-                  disabled={!company || connectWhatsApp.isPending}
-                  className="rounded-[10px] bg-ry-blue-600 hover:bg-ry-blue-700 shadow-[0_6px_16px_rgba(39,72,217,.28)]"
-                >
-                  {connectWhatsApp.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-                  Conectar WhatsApp
-                </Button>
+                <div className="flex gap-2">
+                  {whatsapp?.status === "CONNECTING" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => refetchWhatsAppStatus()}
+                      className="rounded-[10px]"
+                    >
+                      Verificar conexão
+                    </Button>
+                  )}
+                  <Button
+                    onClick={handleConnectWhatsApp}
+                    disabled={!company || connectWhatsApp.isPending}
+                    className="rounded-[10px] bg-ry-blue-600 hover:bg-ry-blue-700 shadow-[0_6px_16px_rgba(39,72,217,.28)]"
+                  >
+                    {connectWhatsApp.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                    {qrCode ? "Gerar novo QR Code" : "Conectar WhatsApp"}
+                  </Button>
+                </div>
               ) : null}
             </div>
           </Card>

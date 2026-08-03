@@ -9,6 +9,7 @@ export type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELL
 
 /** Only ever set (non-null) once an appointment reaches COMPLETED. */
 export type PaymentMethod = "CASH" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
+export type AppointmentOrigin = "MANUAL" | "WHATSAPP";
 
 /** Standard list wrapper used by customers/services/staff/companies (key: `content`). */
 export interface Page<T> {
@@ -208,6 +209,7 @@ export interface AppointmentResponse {
   amountCharged: number | null;
   createdAt: string;
   updatedAt: string;
+  origin: AppointmentOrigin;
 }
 
 /** List wrapper for appointments (key: `appointments`, not `content`). */
@@ -436,8 +438,12 @@ export interface DashboardMetricsResponse {
 
 // ---- Notifications ----
 
-/** "APPOINTMENT_CREATED" | "APPOINTMENT_CANCELLED" | "APPOINTMENT_RESCHEDULED" */
-export type NotificationType = "APPOINTMENT_CREATED" | "APPOINTMENT_CANCELLED" | "APPOINTMENT_RESCHEDULED";
+/** "APPOINTMENT_CREATED" | "APPOINTMENT_CANCELLED" | "APPOINTMENT_RESCHEDULED" | "HUMAN_HANDOFF_REQUESTED" */
+export type NotificationType =
+  | "APPOINTMENT_CREATED"
+  | "APPOINTMENT_CANCELLED"
+  | "APPOINTMENT_RESCHEDULED"
+  | "HUMAN_HANDOFF_REQUESTED";
 
 /**
  * Informational feed of WhatsApp-automated appointment events only — manual
@@ -449,5 +455,29 @@ export interface NotificationResponse {
   type: NotificationType;
   message: string;
   appointmentId: number | null;
+  createdAt: string;
+}
+
+/** A WhatsApp conversation currently awaiting/in a human handoff. */
+export interface HandoffConversationResponse {
+  phone: string;
+  customerId: number | null;
+  customerName: string | null;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+  humanHandoffExpiresAt: string;
+}
+
+/** "IN" | "OUT" */
+export type MessageDirection = "IN" | "OUT";
+
+/** "CUSTOMER" | "BOT" | "HUMAN" */
+export type MessageSenderType = "CUSTOMER" | "BOT" | "HUMAN";
+
+export interface ConversationMessageResponse {
+  id: number;
+  direction: MessageDirection;
+  senderType: MessageSenderType;
+  body: string;
   createdAt: string;
 }

@@ -1,4 +1,4 @@
-import type { AppointmentStatus, EntityStatus, PaymentMethod, WahaConnectionStatus } from "./types";
+import type { AppointmentOrigin, AppointmentStatus, EntityStatus, PaymentMethod, WahaConnectionStatus } from "./types";
 
 // Appointment status -> Portuguese label + the existing badge style class used in the UI.
 export const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -52,3 +52,11 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
 };
 
 export const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "PIX", "CREDIT_CARD", "DEBIT_CARD"];
+
+// How the appointment was booked -> Portuguese label.
+export const APPOINTMENT_ORIGIN_LABEL: Record<AppointmentOrigin, string> = {
+  WHATSAPP: "WhatsApp",
+  MANUAL: "Manual",
+};
+
+export const APPOINTMENT_ORIGINS: AppointmentOrigin[] = ["WHATSAPP", "MANUAL"];
