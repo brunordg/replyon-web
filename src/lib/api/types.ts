@@ -217,6 +217,9 @@ export interface AppointmentResponse {
   paymentMethod: PaymentMethod | null;
   /** Congelado a partir do preço do serviço no momento da conclusão; nulo a menos que COMPLETED. */
   amountCharged: number | null;
+  /** Congelado no momento da conclusão; nulo se o par profissional×serviço nunca foi formalmente atribuído. */
+  commissionPercentage: number | null;
+  commissionAmount: number | null;
   createdAt: string;
   updatedAt: string;
   origin: AppointmentOrigin;

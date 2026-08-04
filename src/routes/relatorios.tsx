@@ -3,13 +3,20 @@ import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { Download } from "lucide-react";
-import { useMemo } from "react";
+import { Download, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Cell, Pie, PieChart } from "recharts";
 import { useStaffList } from "@/lib/api/hooks/staff";
 import { useServices } from "@/lib/api/hooks/services";
+import { useCustomers } from "@/lib/api/hooks/customers";
 import { useAllAppointmentsByStaff } from "@/lib/api/hooks/appointments";
-import { formatBRL } from "@/lib/utils";
+import { formatBRL, formatDate } from "@/lib/utils";
+import {
+  buildCommissionReportWorkbook,
+  downloadWorkbook,
+  type CommissionReportStaff,
+} from "@/lib/commission-report";
 import {
   APPOINTMENT_ORIGIN_LABEL,
   APPOINTMENT_ORIGINS,
@@ -71,9 +78,15 @@ const isCompleted = (a: AppointmentResponse) => a.status === "COMPLETED";
 const countsForTopServices = (a: AppointmentResponse) =>
   a.status === "CONFIRMED" || a.status === "COMPLETED";
 
+function currentMonthValue(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function RelatoriosPage() {
   const staffQuery = useStaffList({ size: 200 });
   const servicesQuery = useServices({ size: 200 });
+  const customersQuery = useCustomers({ size: 200 });
   const staff = staffQuery.data?.content ?? [];
   const staffIds = useMemo(() => staff.map((s) => s.id), [staff]);
   const { appointments } = useAllAppointmentsByStaff(staffIds);
@@ -83,6 +96,58 @@ function RelatoriosPage() {
     [servicesQuery.data],
   );
   const priceOf = (id: number) => serviceMap.get(id)?.price ?? 0;
+  const customerMap = useMemo(
+    () => new Map((customersQuery.data?.content ?? []).map((c) => [c.id, c])),
+    [customersQuery.data],
+  );
+  const staffMap = useMemo(() => new Map(staff.map((s) => [s.id, s])), [staff]);
+
+  // Relatório de comissões: seção isolada com seu próprio mês selecionado,
+  // independente do resto da tela (que fica fixo no mês atual).
+  const [commissionMonth, setCommissionMonth] = useState(currentMonthValue);
+  const [isExportingCommissions, setIsExportingCommissions] = useState(false);
+
+  const commissionReport = useMemo<CommissionReportStaff[]>(() => {
+    const byStaff = new Map<number, CommissionReportStaff>();
+    for (const a of appointments) {
+      if (a.status !== "COMPLETED" || a.appointmentDateTime.slice(0, 7) !== commissionMonth) {
+        continue;
+      }
+      const entry = byStaff.get(a.staffId) ?? {
+        staffId: a.staffId,
+        staffName: staffMap.get(a.staffId)?.name ?? `Profissional #${a.staffId}`,
+        rows: [],
+        total: 0,
+      };
+      const commissionAmount = a.commissionAmount ?? 0;
+      entry.rows.push({
+        date: formatDate(a.appointmentDateTime),
+        customerName: customerMap.get(a.customerId)?.name ?? `Cliente #${a.customerId}`,
+        serviceName: serviceMap.get(a.serviceId)?.name ?? `Serviço #${a.serviceId}`,
+        amountCharged: a.amountCharged ?? 0,
+        commissionPercentage: a.commissionPercentage,
+        commissionAmount,
+      });
+      entry.total += commissionAmount;
+      byStaff.set(a.staffId, entry);
+    }
+    return [...byStaff.values()].sort((x, y) => x.staffName.localeCompare(y.staffName));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointments, commissionMonth, staffMap, customerMap, serviceMap]);
+
+  async function handleExportCommissions() {
+    if (commissionReport.length === 0) {
+      toast.error("Nenhum profissional com atendimento concluído nesse mês.");
+      return;
+    }
+    setIsExportingCommissions(true);
+    try {
+      const workbook = await buildCommissionReportWorkbook(commissionReport);
+      downloadWorkbook(workbook, `comissoes-${commissionMonth}.xlsx`);
+    } finally {
+      setIsExportingCommissions(false);
+    }
+  }
 
   // Faturamento por mês nos últimos 6 meses.
   const months = useMemo(() => {
@@ -357,6 +422,58 @@ function RelatoriosPage() {
           )}
         </Card>
       </div>
+
+      <Card className="mt-4 rounded-[14px] border-ry-line p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className="font-display text-[15px] font-medium uppercase tracking-[1.2px]">
+              Comissões
+            </span>
+            <p className="mt-1 text-[12px] text-ry-ink-soft">
+              Comissão por profissional no mês selecionado, para execução de pagamentos.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="month"
+              value={commissionMonth}
+              onChange={(e) => setCommissionMonth(e.target.value)}
+              className="h-9 rounded-[10px] border border-ry-line px-3 text-[12.5px]"
+            />
+            <Button
+              variant="outline"
+              className="rounded-[10px] gap-2"
+              disabled={isExportingCommissions}
+              onClick={handleExportCommissions}
+            >
+              {isExportingCommissions ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              Exportar Excel
+            </Button>
+          </div>
+        </div>
+
+        {commissionReport.length === 0 ? (
+          <p className="mt-4 text-[12px] text-ry-ink-soft">
+            Nenhum profissional com atendimento concluído nesse mês.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {commissionReport.map((s) => (
+              <li key={s.staffId} className="flex items-center justify-between gap-3">
+                <span className="text-[12px] font-medium">{s.staffName}</span>
+                <span className="text-[12px] text-ry-ink-soft">
+                  {s.rows.length} atendimento{s.rows.length === 1 ? "" : "s"} ·{" "}
+                  <span className="font-medium text-ry-ink">{formatBRL(s.total)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </>
   );
 }
