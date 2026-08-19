@@ -110,6 +110,8 @@ interface Evt {
   detail: string;
   startLabel: string;
   endLabel: string;
+  /** Janela de espera livre de um serviço parallelCapable, em horas desde o início do bloco. */
+  waitWindow: { offsetHours: number; durationHours: number } | null;
 }
 
 function hourLabel(iso: string): string {
@@ -180,6 +182,10 @@ function AgendaPage() {
           endMs > startMs
             ? (endMs - startMs) / 3_600_000
             : Math.max(0.5, (service?.durationMinutes ?? 60) / 60);
+        const waitWindow =
+          service?.parallelCapable && service.activeMinutesBefore != null && service.waitMinutes != null
+            ? { offsetHours: service.activeMinutesBefore / 60, durationHours: service.waitMinutes / 60 }
+            : null;
         return [
           {
             id: a.id,
@@ -192,6 +198,7 @@ function AgendaPage() {
             detail: `${service?.name ?? "Serviço"} · ${staffMap.get(a.staffId)?.name ?? ""}`.trim(),
             startLabel: hourLabel(a.appointmentDateTime),
             endLabel: hourLabel(a.endDateTime),
+            waitWindow,
           },
         ];
       }),
@@ -572,8 +579,18 @@ function EventBlock({ evt, lane }: { evt: Evt; lane?: { index: number; of: numbe
         width: `calc(${width} - 8px)`,
       }}
     >
-      <b className="block truncate text-[10.5px] font-semibold">{evt.customer}</b>
-      <small className="block truncate opacity-80">
+      {evt.waitWindow && (
+        <div
+          title="Janela de espera — profissional livre para outro atendimento"
+          className="pointer-events-none absolute inset-x-0 z-[1] bg-[repeating-linear-gradient(135deg,rgba(255,255,255,.55)_0px,rgba(255,255,255,.55)_4px,transparent_4px,transparent_8px)]"
+          style={{
+            top: evt.waitWindow.offsetHours * CELL,
+            height: evt.waitWindow.durationHours * CELL,
+          }}
+        />
+      )}
+      <b className="relative z-[2] block truncate text-[10.5px] font-semibold">{evt.customer}</b>
+      <small className="relative z-[2] block truncate opacity-80">
         {of === 1
           ? `${evt.startLabel} – ${evt.endLabel} · ${evt.detail}`
           : of === 2

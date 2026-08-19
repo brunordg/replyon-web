@@ -141,6 +141,12 @@ export interface ServiceResponse {
   status: EntityStatus;
   createdAt: string;
   updatedAt: string;
+  /** Permite encaixar outro cliente na janela de espera deste serviço (ex.: coloração). */
+  parallelCapable: boolean;
+  /** Minutos em que o profissional fica ocupado no início. Só relevante quando parallelCapable. */
+  activeMinutesBefore: number | null;
+  /** Minutos de espera livre (profissional disponível). Só relevante quando parallelCapable. */
+  waitMinutes: number | null;
 }
 
 export interface CreateServiceRequest {
@@ -148,6 +154,9 @@ export interface CreateServiceRequest {
   description?: string;
   price: number;
   durationMinutes: number;
+  parallelCapable?: boolean;
+  activeMinutesBefore?: number;
+  waitMinutes?: number;
 }
 
 export interface UpdateServiceRequest {
@@ -155,6 +164,10 @@ export interface UpdateServiceRequest {
   description?: string;
   price?: number;
   durationMinutes?: number;
+  /** undefined/null = não altera o encaixe paralelo atual; true = habilita/atualiza fases; false = desabilita. */
+  parallelCapable?: boolean;
+  activeMinutesBefore?: number;
+  waitMinutes?: number;
 }
 
 // ---- Profissionais ----

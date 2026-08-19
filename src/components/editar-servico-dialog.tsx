@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { useUpdateService } from "@/lib/api/hooks/services";
 import { parsePrice } from "@/lib/utils";
@@ -28,7 +29,19 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
   const [description, setDescription] = useState(service.description ?? "");
   const [price, setPrice] = useState(toPriceInput(service.price));
   const [duration, setDuration] = useState(String(service.durationMinutes));
-  const [errors, setErrors] = useState<{ name?: string; price?: string; duration?: string }>({});
+  const [parallelCapable, setParallelCapable] = useState(service.parallelCapable);
+  const [activeMinutesBefore, setActiveMinutesBefore] = useState(
+    service.activeMinutesBefore != null ? String(service.activeMinutesBefore) : "",
+  );
+  const [waitMinutes, setWaitMinutes] = useState(
+    service.waitMinutes != null ? String(service.waitMinutes) : "",
+  );
+  const [errors, setErrors] = useState<{
+    name?: string;
+    price?: string;
+    duration?: string;
+    phases?: string;
+  }>({});
   const updateService = useUpdateService();
 
   useEffect(() => {
@@ -37,6 +50,9 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
       setDescription(service.description ?? "");
       setPrice(toPriceInput(service.price));
       setDuration(String(service.durationMinutes));
+      setParallelCapable(service.parallelCapable);
+      setActiveMinutesBefore(service.activeMinutesBefore != null ? String(service.activeMinutesBefore) : "");
+      setWaitMinutes(service.waitMinutes != null ? String(service.waitMinutes) : "");
       setErrors({});
     }
   }, [open, service]);
@@ -45,12 +61,24 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
     e.preventDefault();
     const priceNum = parsePrice(price);
     const durationNum = Number(duration);
+    const activeBeforeNum = Number(activeMinutesBefore);
+    const waitNum = Number(waitMinutes);
     const nextErrors: typeof errors = {};
 
     if (!name.trim()) nextErrors.name = "Informe o nome.";
     if (Number.isNaN(priceNum) || priceNum < 0.01) nextErrors.price = "Preço deve ser ao menos 0,01.";
     if (!Number.isInteger(durationNum) || durationNum < 1)
       nextErrors.duration = "Duração deve ser ao menos 1 minuto.";
+
+    if (parallelCapable) {
+      if (!activeMinutesBefore.trim() || !Number.isInteger(activeBeforeNum) || activeBeforeNum < 1) {
+        nextErrors.phases = "Informe os tempos de fase (mínimo 1 minuto cada).";
+      } else if (!waitMinutes.trim() || !Number.isInteger(waitNum) || waitNum < 1) {
+        nextErrors.phases = "Informe os tempos de fase (mínimo 1 minuto cada).";
+      } else if (Number.isInteger(durationNum) && activeBeforeNum + waitNum > durationNum) {
+        nextErrors.phases = "A soma das fases não pode passar da duração total.";
+      }
+    }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -63,6 +91,9 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
           description: description.trim() || undefined,
           price: priceNum,
           durationMinutes: durationNum,
+          parallelCapable,
+          activeMinutesBefore: parallelCapable ? activeBeforeNum : undefined,
+          waitMinutes: parallelCapable ? waitNum : undefined,
         },
       },
       { onSuccess: () => setOpen(false) },
@@ -133,6 +164,53 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
               />
               {errors.duration && <p className="text-[11px] text-danger">{errors.duration}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-[10px] border border-ry-line px-3 py-2.5">
+              <div>
+                <Label htmlFor="edit-servico-encaixe" className="cursor-pointer">
+                  Permite encaixe
+                </Label>
+                <p className="text-[11px] text-ry-ink-soft">
+                  O serviço tem uma etapa em que o profissional fica livre para outro atendimento.
+                </p>
+              </div>
+              <Switch id="edit-servico-encaixe" checked={parallelCapable} onCheckedChange={setParallelCapable} />
+            </div>
+            {parallelCapable && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-servico-fase-ativa">Fase ativa inicial (min)</Label>
+                  <Input
+                    id="edit-servico-fase-ativa"
+                    type="number"
+                    inputMode="numeric"
+                    step="1"
+                    min="1"
+                    placeholder="20"
+                    value={activeMinutesBefore}
+                    onChange={(e) => setActiveMinutesBefore(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-servico-fase-espera">Espera livre (min)</Label>
+                  <Input
+                    id="edit-servico-fase-espera"
+                    type="number"
+                    inputMode="numeric"
+                    step="1"
+                    min="1"
+                    placeholder="40"
+                    value={waitMinutes}
+                    onChange={(e) => setWaitMinutes(e.target.value)}
+                  />
+                </div>
+                {errors.phases && (
+                  <p className="col-span-2 text-[11px] text-danger">{errors.phases}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-2">

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Loader2 } from "lucide-react";
 import { useCreateService } from "@/lib/api/hooks/services";
 import { parsePrice } from "@/lib/utils";
@@ -22,7 +23,15 @@ export function NovoServicoDialog() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [duration, setDuration] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; price?: string; duration?: string }>({});
+  const [parallelCapable, setParallelCapable] = useState(false);
+  const [activeMinutesBefore, setActiveMinutesBefore] = useState("");
+  const [waitMinutes, setWaitMinutes] = useState("");
+  const [errors, setErrors] = useState<{
+    name?: string;
+    price?: string;
+    duration?: string;
+    phases?: string;
+  }>({});
   const createService = useCreateService();
 
   function reset() {
@@ -30,6 +39,9 @@ export function NovoServicoDialog() {
     setDescription("");
     setPrice("");
     setDuration("");
+    setParallelCapable(false);
+    setActiveMinutesBefore("");
+    setWaitMinutes("");
     setErrors({});
   }
 
@@ -42,6 +54,8 @@ export function NovoServicoDialog() {
     e.preventDefault();
     const priceNum = parsePrice(price);
     const durationNum = Number(duration);
+    const activeBeforeNum = Number(activeMinutesBefore);
+    const waitNum = Number(waitMinutes);
     const nextErrors: typeof errors = {};
 
     if (!name.trim()) nextErrors.name = "Informe o nome.";
@@ -49,6 +63,16 @@ export function NovoServicoDialog() {
       nextErrors.price = "Preço deve ser ao menos 0,01.";
     if (!duration.trim() || !Number.isInteger(durationNum) || durationNum < 1)
       nextErrors.duration = "Duração deve ser ao menos 1 minuto.";
+
+    if (parallelCapable) {
+      if (!activeMinutesBefore.trim() || !Number.isInteger(activeBeforeNum) || activeBeforeNum < 1) {
+        nextErrors.phases = "Informe os tempos de fase (mínimo 1 minuto cada).";
+      } else if (!waitMinutes.trim() || !Number.isInteger(waitNum) || waitNum < 1) {
+        nextErrors.phases = "Informe os tempos de fase (mínimo 1 minuto cada).";
+      } else if (Number.isInteger(durationNum) && activeBeforeNum + waitNum > durationNum) {
+        nextErrors.phases = "A soma das fases não pode passar da duração total.";
+      }
+    }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -59,6 +83,9 @@ export function NovoServicoDialog() {
         description: description.trim() || undefined,
         price: priceNum,
         durationMinutes: durationNum,
+        parallelCapable: parallelCapable || undefined,
+        activeMinutesBefore: parallelCapable ? activeBeforeNum : undefined,
+        waitMinutes: parallelCapable ? waitNum : undefined,
       },
       {
         onSuccess: () => handleOpenChange(false),
@@ -136,6 +163,53 @@ export function NovoServicoDialog() {
               />
               {errors.duration && <p className="text-[11px] text-danger">{errors.duration}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-[10px] border border-ry-line px-3 py-2.5">
+              <div>
+                <Label htmlFor="servico-encaixe" className="cursor-pointer">
+                  Permite encaixe
+                </Label>
+                <p className="text-[11px] text-ry-ink-soft">
+                  O serviço tem uma etapa em que o profissional fica livre para outro atendimento.
+                </p>
+              </div>
+              <Switch id="servico-encaixe" checked={parallelCapable} onCheckedChange={setParallelCapable} />
+            </div>
+            {parallelCapable && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="servico-fase-ativa">Fase ativa inicial (min)</Label>
+                  <Input
+                    id="servico-fase-ativa"
+                    type="number"
+                    inputMode="numeric"
+                    step="1"
+                    min="1"
+                    placeholder="20"
+                    value={activeMinutesBefore}
+                    onChange={(e) => setActiveMinutesBefore(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="servico-fase-espera">Espera livre (min)</Label>
+                  <Input
+                    id="servico-fase-espera"
+                    type="number"
+                    inputMode="numeric"
+                    step="1"
+                    min="1"
+                    placeholder="40"
+                    value={waitMinutes}
+                    onChange={(e) => setWaitMinutes(e.target.value)}
+                  />
+                </div>
+                {errors.phases && (
+                  <p className="col-span-2 text-[11px] text-danger">{errors.phases}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-2">
