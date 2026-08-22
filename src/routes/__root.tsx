@@ -18,7 +18,7 @@ import { AppSidebar } from "../components/app-sidebar";
 import { Topbar } from "../components/topbar";
 import { AuthProvider, useAuth } from "../lib/auth/auth-context";
 
-const AUTH_ROUTES = new Set(["/login", "/signup"]);
+const PUBLIC_ROUTES = new Set(["/login", "/signup", "/landing"]);
 
 function NotFoundComponent() {
   return (
@@ -86,8 +86,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Replyon — Gestão de Agendamentos" },
       {
         name: "description",
-        content:
-          "Replyon: agenda, agendamentos, clientes e gestão para o seu negócio de serviços.",
+        content: "Replyon: agenda, agendamentos, clientes e gestão para o seu negócio de serviços.",
       },
       { property: "og:title", content: "Replyon — Gestão de Agendamentos" },
       {
@@ -143,7 +142,7 @@ function RootComponent() {
 
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isAuthRoute = AUTH_ROUTES.has(pathname);
+  const isPublicRoute = PUBLIC_ROUTES.has(pathname);
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -151,12 +150,12 @@ function AppShell() {
   // O token vive no localStorage, então isso roda depois da hidratação.
   useEffect(() => {
     if (isLoading) return;
-    if (!isAuthenticated && !isAuthRoute) {
+    if (!isAuthenticated && !isPublicRoute) {
       navigate({ to: "/login" });
     }
-  }, [isLoading, isAuthenticated, isAuthRoute, navigate]);
+  }, [isLoading, isAuthenticated, isPublicRoute, navigate]);
 
-  if (isAuthRoute) return <Outlet />;
+  if (isPublicRoute) return <Outlet />;
 
   // Enquanto hidrata ou antes do redirecionamento acontecer, não exibir conteúdo protegido por um instante.
   if (isLoading || !isAuthenticated) {

@@ -165,6 +165,12 @@ function LoginPage() {
               Criar conta grátis
             </Link>
           </p>
+
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            <Link to="/landing" className="font-semibold text-primary hover:underline">
+              Conheça nosso plano
+            </Link>
+          </p>
         </div>
       </div>
     </div>

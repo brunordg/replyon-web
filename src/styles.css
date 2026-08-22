@@ -118,3 +118,27 @@
 @utility font-logo { font-family: var(--font-logo); }
 @utility font-display { font-family: var(--font-display); }
 @utility font-body { font-family: var(--font-body); }
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.22s;
+    animation-timing-function: ease-out;
+  }
+
+  ::view-transition-old(root) {
+    animation-name: ry-fade-out;
+  }
+
+  ::view-transition-new(root) {
+    animation-name: ry-fade-in;
+  }
+
+  @keyframes ry-fade-out {
+    to { opacity: 0; }
+  }
+
+  @keyframes ry-fade-in {
+    from { opacity: 0; }
+  }
+}

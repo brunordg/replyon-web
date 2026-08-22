@@ -7,7 +7,7 @@ import { CalendarCheck, Sparkles, Users, Clock } from "lucide-react";
  */
 export function AuthShowcase() {
   return (
-    <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-[var(--ry-blue-900)] via-[var(--ry-blue-700)] to-[var(--ry-blue-500)] text-white p-10">
+    <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-[var(--ry-blue-900)] via-[var(--ry-blue-700)] to-[var(--ry-blue-500)] text-white p-10 [view-transition-name:auth-showcase]">
       {/* padrão de grade */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.12]"
