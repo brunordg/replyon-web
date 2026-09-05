@@ -14,6 +14,7 @@ import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as AtendimentoRouteImport } from './routes/atendimento'
 import { Route as BloqueiosRouteImport } from './routes/bloqueios'
+import { Route as ChatbotFlowsRouteImport } from './routes/chatbot-flows'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as LandingRouteImport } from './routes/landing'
@@ -46,6 +47,11 @@ const AtendimentoRoute = AtendimentoRouteImport.update({
 const BloqueiosRoute = BloqueiosRouteImport.update({
   id: '/bloqueios',
   path: '/bloqueios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatbotFlowsRoute = ChatbotFlowsRouteImport.update({
+  id: '/chatbot-flows',
+  path: '/chatbot-flows',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientesRoute = ClientesRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/agendamentos': typeof AgendamentosRoute
   '/atendimento': typeof AtendimentoRoute
   '/bloqueios': typeof BloqueiosRoute
+  '/chatbot-flows': typeof ChatbotFlowsRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/landing': typeof LandingRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/agendamentos': typeof AgendamentosRoute
   '/atendimento': typeof AtendimentoRoute
   '/bloqueios': typeof BloqueiosRoute
+  '/chatbot-flows': typeof ChatbotFlowsRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/landing': typeof LandingRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/agendamentos': typeof AgendamentosRoute
   '/atendimento': typeof AtendimentoRoute
   '/bloqueios': typeof BloqueiosRoute
+  '/chatbot-flows': typeof ChatbotFlowsRoute
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/landing': typeof LandingRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/agendamentos'
     | '/atendimento'
     | '/bloqueios'
+    | '/chatbot-flows'
     | '/clientes'
     | '/configuracoes'
     | '/landing'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/agendamentos'
     | '/atendimento'
     | '/bloqueios'
+    | '/chatbot-flows'
     | '/clientes'
     | '/configuracoes'
     | '/landing'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/agendamentos'
     | '/atendimento'
     | '/bloqueios'
+    | '/chatbot-flows'
     | '/clientes'
     | '/configuracoes'
     | '/landing'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   AgendamentosRoute: typeof AgendamentosRoute
   AtendimentoRoute: typeof AtendimentoRoute
   BloqueiosRoute: typeof BloqueiosRoute
+  ChatbotFlowsRoute: typeof ChatbotFlowsRoute
   ClientesRoute: typeof ClientesRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   LandingRoute: typeof LandingRoute
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/bloqueios'
       fullPath: '/bloqueios'
       preLoaderRoute: typeof BloqueiosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chatbot-flows': {
+      id: '/chatbot-flows'
+      path: '/chatbot-flows'
+      fullPath: '/chatbot-flows'
+      preLoaderRoute: typeof ChatbotFlowsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clientes': {
@@ -301,6 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendamentosRoute: AgendamentosRoute,
   AtendimentoRoute: AtendimentoRoute,
   BloqueiosRoute: BloqueiosRoute,
+  ChatbotFlowsRoute: ChatbotFlowsRoute,
   ClientesRoute: ClientesRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
   LandingRoute: LandingRoute,
