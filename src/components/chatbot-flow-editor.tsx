@@ -23,7 +23,7 @@ import { Plus, Trash2, Copy } from "lucide-react";
 
 interface FlowNode {
   id: string;
-  type: "message" | "choice" | "condition" | "action";
+  type: "MESSAGE" | "CHOICE" | "CONDITION" | "ACTION";
   content: string;
   config: Record<string, any>;
 }
@@ -52,7 +52,7 @@ export function ChatbotFlowEditor({ definition, onChange, readOnly = false }: Ch
   const [edges, setEdges] = useState<FlowEdge[]>(definition?.edges || []);
   const [rootNodeId, setRootNodeId] = useState(definition?.rootNodeId || "n1");
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
-  const [newNodeType, setNewNodeType] = useState<"message" | "choice" | "condition" | "action">("message");
+  const [newNodeType, setNewNodeType] = useState<"MESSAGE" | "CHOICE" | "CONDITION" | "ACTION">("MESSAGE");
 
   useEffect(() => {
     if (!readOnly) {
@@ -77,11 +77,11 @@ export function ChatbotFlowEditor({ definition, onChange, readOnly = false }: Ch
       id: newId,
       type: newNodeType,
       content:
-        newNodeType === "message"
+        newNodeType === "MESSAGE"
           ? "Nova mensagem"
-          : newNodeType === "choice"
+          : newNodeType === "CHOICE"
             ? "Escolha uma opção"
-            : newNodeType === "condition"
+            : newNodeType === "CONDITION"
               ? "Verificar condição"
               : "Executar ação",
       config: {},
@@ -175,10 +175,10 @@ export function ChatbotFlowEditor({ definition, onChange, readOnly = false }: Ch
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="message">Mensagem</SelectItem>
-              <SelectItem value="choice">Escolha</SelectItem>
-              <SelectItem value="condition">Condição</SelectItem>
-              <SelectItem value="action">Ação</SelectItem>
+              <SelectItem value="MESSAGE">Mensagem</SelectItem>
+              <SelectItem value="CHOICE">Escolha</SelectItem>
+              <SelectItem value="CONDITION">Condição</SelectItem>
+              <SelectItem value="ACTION">Ação</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={addNode} className="gap-2">
