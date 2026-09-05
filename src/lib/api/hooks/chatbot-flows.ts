@@ -40,7 +40,7 @@ export function useChatbotFlows() {
   return useQuery({
     queryKey: ["chatbot-flows"],
     queryFn: async () => {
-      const response = await apiClient.get<ChatbotFlow[]>("/api/v1/chatbot-flows");
+      const response = await apiClient.get<ChatbotFlow[]>("/v1/chatbot-flows");
       return response.data;
     },
   });
@@ -52,7 +52,7 @@ export function useChatbotFlow(flowId: string | null) {
     queryKey: ["chatbot-flows", flowId],
     queryFn: async () => {
       if (!flowId) return null;
-      const response = await apiClient.get<ChatbotFlow>(`/api/v1/chatbot-flows/${flowId}`);
+      const response = await apiClient.get<ChatbotFlow>(`/v1/chatbot-flows/${flowId}`);
       return response.data;
     },
     enabled: !!flowId,
@@ -65,7 +65,7 @@ export function useCreateFlow() {
 
   return useMutation({
     mutationFn: async (data: CreateFlowDTO) => {
-      const response = await apiClient.post<ChatbotFlow>("/api/v1/chatbot-flows", data);
+      const response = await apiClient.post<ChatbotFlow>("/v1/chatbot-flows", data);
       return response.data;
     },
     onSuccess: () => {
@@ -80,7 +80,7 @@ export function useUpdateFlow(flowId: string) {
 
   return useMutation({
     mutationFn: async (data: UpdateFlowDTO) => {
-      const response = await apiClient.put<ChatbotFlow>(`/api/v1/chatbot-flows/${flowId}`, data);
+      const response = await apiClient.put<ChatbotFlow>(`/v1/chatbot-flows/${flowId}`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -96,7 +96,7 @@ export function usePublishFlow() {
 
   return useMutation({
     mutationFn: async (flowId: string) => {
-      const response = await apiClient.post<ChatbotFlow>(`/api/v1/chatbot-flows/${flowId}/publish`);
+      const response = await apiClient.post<ChatbotFlow>(`/v1/chatbot-flows/${flowId}/publish`);
       return response.data;
     },
     onSuccess: () => {
@@ -111,7 +111,7 @@ export function useDeleteFlow() {
 
   return useMutation({
     mutationFn: async (flowId: string) => {
-      await apiClient.delete(`/api/v1/chatbot-flows/${flowId}`);
+      await apiClient.delete(`/v1/chatbot-flows/${flowId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chatbot-flows"] });
@@ -125,7 +125,7 @@ export function useActivateFlow() {
 
   return useMutation({
     mutationFn: async (flowId: string) => {
-      const response = await apiClient.post<ChatbotFlow>(`/api/v1/chatbot-flows/${flowId}/activate`);
+      const response = await apiClient.post<ChatbotFlow>(`/v1/chatbot-flows/${flowId}/activate`);
       return response.data;
     },
     onSuccess: () => {
