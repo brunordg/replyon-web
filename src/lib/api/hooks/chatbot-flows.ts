@@ -40,8 +40,7 @@ export function useChatbotFlows() {
   return useQuery({
     queryKey: ["chatbot-flows"],
     queryFn: async () => {
-      const response = await apiClient.get<ChatbotFlow[]>("/v1/chatbot-flows");
-      return response.data;
+      return await apiClient.get<ChatbotFlow[]>("/v1/chatbot-flows");
     },
   });
 }
@@ -52,8 +51,7 @@ export function useChatbotFlow(flowId: string | null) {
     queryKey: ["chatbot-flows", flowId],
     queryFn: async () => {
       if (!flowId) return null;
-      const response = await apiClient.get<ChatbotFlow>(`/v1/chatbot-flows/${flowId}`);
-      return response.data;
+      return await apiClient.get<ChatbotFlow>(`/v1/chatbot-flows/${flowId}`);
     },
     enabled: !!flowId,
   });
@@ -66,7 +64,7 @@ export function useCreateFlow() {
   return useMutation({
     mutationFn: async (data: CreateFlowDTO) => {
       const response = await apiClient.post<ChatbotFlow>("/v1/chatbot-flows", data);
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chatbot-flows"] });
@@ -81,7 +79,7 @@ export function useUpdateFlow(flowId: string) {
   return useMutation({
     mutationFn: async (data: UpdateFlowDTO) => {
       const response = await apiClient.put<ChatbotFlow>(`/v1/chatbot-flows/${flowId}`, data);
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chatbot-flows"] });
@@ -97,7 +95,7 @@ export function usePublishFlow() {
   return useMutation({
     mutationFn: async (flowId: string) => {
       const response = await apiClient.post<ChatbotFlow>(`/v1/chatbot-flows/${flowId}/publish`);
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chatbot-flows"] });
@@ -126,7 +124,7 @@ export function useActivateFlow() {
   return useMutation({
     mutationFn: async (flowId: string) => {
       const response = await apiClient.post<ChatbotFlow>(`/v1/chatbot-flows/${flowId}/activate`);
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chatbot-flows"] });
