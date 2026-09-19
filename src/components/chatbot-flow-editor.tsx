@@ -1612,6 +1612,9 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
           connectionMode={ConnectionMode.Loose}
           defaultEdgeOptions={{ style: { strokeWidth: 2 }, type: "smoothstep" }}
           fitView
+          fitViewOptions={{ padding: 0.3, maxZoom: 0.85 }}
+          minZoom={0.1}
+          maxZoom={1.5}
           proOptions={{ hideAttribution: true }}
         >
           <Background gap={18} size={1.5} className="opacity-60" />
