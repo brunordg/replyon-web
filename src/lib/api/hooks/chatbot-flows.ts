@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 
+// Shape retornado por list/create/publish/activate (ChatbotFlowResponse no backend) —
+// metadados do fluxo, sem nós/edges.
 export interface ChatbotFlow {
   id: string;
   name: string;
@@ -10,11 +12,16 @@ export interface ChatbotFlow {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
-  definition?: {
-    nodes: any[];
-    edges: any[];
-    rootNodeId: string;
-  };
+}
+
+// Shape retornado por get/update (ChatbotFlowDefinitionResponse no backend) — nós/edges
+// no nível raiz, não aninhados em "definition". Usar este tipo (não ChatbotFlow) para
+// alimentar o editor visual.
+export interface ChatbotFlowDefinition {
+  nodes: any[];
+  edges: any[];
+  rootNodeId: string;
+  validation: { nodeId: string | null; field: string; message: string }[];
 }
 
 export interface CreateFlowDTO {
@@ -45,13 +52,15 @@ export function useChatbotFlows() {
   });
 }
 
-// Get single flow
+// Get single flow's definition (nodes/edges/rootNodeId) — o que o editor visual precisa.
+// A lista (useChatbotFlows) só traz metadados; sem isso, reabrir um fluxo salvo mostrava
+// o canvas vazio mesmo com os dados persistidos no banco.
 export function useChatbotFlow(flowId: string | null) {
   return useQuery({
     queryKey: ["chatbot-flows", flowId],
     queryFn: async () => {
       if (!flowId) return null;
-      return await apiClient.get<ChatbotFlow>(`/v1/chatbot-flows/${flowId}`);
+      return await apiClient.get<ChatbotFlowDefinition>(`/v1/chatbot-flows/${flowId}`);
     },
     enabled: !!flowId,
   });
@@ -72,20 +81,13 @@ export function useCreateFlow() {
   });
 }
 
-export interface FlowDefinitionDTO {
-  nodes: any[];
-  edges: any[];
-  rootNodeId: string;
-  validation: any[];
-}
-
 // Update flow (draft only) — returns the updated definition, not the flow metadata
 export function useUpdateFlow(flowId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: UpdateFlowDTO) => {
-      const response = await apiClient.put<FlowDefinitionDTO>(`/v1/chatbot-flows/${flowId}`, data);
+      const response = await apiClient.put<ChatbotFlowDefinition>(`/v1/chatbot-flows/${flowId}`, data);
       return response;
     },
     onSuccess: () => {

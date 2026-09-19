@@ -17,10 +17,22 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Trash2, Send, CheckCircle2, Edit2 } from "lucide-react";
-import { useChatbotFlows, useCreateFlow, usePublishFlow, useDeleteFlow, useUpdateFlow } from "@/lib/api/hooks/chatbot-flows";
+import { Loader2, Plus, Trash2, Send, CheckCircle2, Edit2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import {
+  useChatbotFlows,
+  useChatbotFlow,
+  useCreateFlow,
+  usePublishFlow,
+  useDeleteFlow,
+  useUpdateFlow,
+} from "@/lib/api/hooks/chatbot-flows";
 import { Badge } from "@/components/ui/badge";
 import { ChatbotFlowEditor } from "@/components/chatbot-flow-editor";
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
 
 export const Route = createFileRoute("/chatbot-flows")({
   component: ChatbotFlowsPage,
@@ -35,8 +47,10 @@ export const Route = createFileRoute("/chatbot-flows")({
 function ChatbotFlowsPage() {
   const { data: flows = [], isLoading, refetch } = useChatbotFlows();
   const createFlow = useCreateFlow();
-  const [selectedFlow, setSelectedFlow] = useState<any>(null);
-  const updateFlow = useUpdateFlow(selectedFlow?.id ?? "");
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
+  const selectedFlowMeta = flows.find((f) => f.id === selectedFlowId) ?? null;
+  const { data: selectedFlowDefinition, isLoading: isLoadingDefinition } = useChatbotFlow(selectedFlowId);
+  const updateFlow = useUpdateFlow(selectedFlowId ?? "");
   const publishFlow = usePublishFlow();
   const deleteFlow = useDeleteFlow();
 
@@ -66,10 +80,13 @@ function ChatbotFlowsPage() {
       },
       {
         onSuccess: (data) => {
-          setSelectedFlow(data);
+          setSelectedFlowId(data.id);
           setNewFlowName("");
           setIsCreating(false);
-          refetch();
+          toast.success("Fluxo criado.");
+        },
+        onError: (error) => {
+          toast.error(errorMessage(error, "Não foi possível criar o fluxo."));
         },
       }
     );
@@ -78,7 +95,10 @@ function ChatbotFlowsPage() {
   const handlePublish = (flowId: string) => {
     publishFlow.mutate(flowId, {
       onSuccess: () => {
-        refetch();
+        toast.success("Fluxo publicado e ativado.");
+      },
+      onError: (error) => {
+        toast.error(errorMessage(error, "Não foi possível publicar o fluxo."));
       },
     });
   };
@@ -86,30 +106,36 @@ function ChatbotFlowsPage() {
   const handleDelete = (flowId: string) => {
     deleteFlow.mutate(flowId, {
       onSuccess: () => {
-        setSelectedFlow(null);
-        refetch();
+        setSelectedFlowId(null);
+        toast.success("Fluxo deletado.");
+      },
+      onError: (error) => {
+        toast.error(errorMessage(error, "Não foi possível deletar o fluxo."));
       },
     });
   };
 
   const handleSaveEdits = useCallback(
     (definition: any) => {
-      if (!selectedFlow) return;
+      if (!selectedFlowId) return;
       updateFlow.mutate(
         { definition },
         {
           onSuccess: (data) => {
-            setSelectedFlow((prev: any) => ({
-              ...prev,
-              definition: { nodes: data.nodes, edges: data.edges, rootNodeId: data.rootNodeId },
-            }));
             setIsEditing(false);
-            refetch();
+            if (data.validation.length > 0) {
+              toast.warning(`Fluxo salvo, mas com ${data.validation.length} pendência(s) — veja abaixo do editor.`);
+            } else {
+              toast.success("Fluxo salvo.");
+            }
+          },
+          onError: (error) => {
+            toast.error(errorMessage(error, "Não foi possível salvar o fluxo."));
           },
         }
       );
     },
-    [selectedFlow, updateFlow, refetch]
+    [selectedFlowId, updateFlow]
   );
 
   return (
@@ -165,12 +191,15 @@ function ChatbotFlowsPage() {
               </div>
             ) : (
               <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                {flows.map((flow: any) => (
+                {flows.map((flow) => (
                   <button
                     key={flow.id}
-                    onClick={() => setSelectedFlow(flow)}
+                    onClick={() => {
+                      setSelectedFlowId(flow.id);
+                      setIsEditing(false);
+                    }}
                     className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                      selectedFlow?.id === flow.id
+                      selectedFlowId === flow.id
                         ? "bg-primary text-primary-foreground border-primary"
                         : "hover:bg-muted border-transparent"
                     }`}
@@ -194,32 +223,32 @@ function ChatbotFlowsPage() {
 
         {/* Right Panel: Flow Editor */}
         <div className="space-y-4">
-          {selectedFlow ? (
+          {selectedFlowMeta ? (
             <>
               <Card className="p-6">
                 <div className="space-y-4">
                   <div>
                     <Label>Nome</Label>
-                    <Input value={selectedFlow.name} readOnly className="mt-1" />
+                    <Input value={selectedFlowMeta.name} readOnly className="mt-1" />
                   </div>
 
                   <div>
                     <Label>Descrição</Label>
-                    <Input value={selectedFlow.description || ""} readOnly className="mt-1" />
+                    <Input value={selectedFlowMeta.description || ""} readOnly className="mt-1" />
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 pt-4">
                     <div className="text-center p-3 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold">{selectedFlow.definition?.nodes?.length || 0}</div>
+                      <div className="text-2xl font-bold">{selectedFlowDefinition?.nodes?.length || 0}</div>
                       <div className="text-xs text-muted-foreground">Nós</div>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold">{selectedFlow.definition?.edges?.length || 0}</div>
+                      <div className="text-2xl font-bold">{selectedFlowDefinition?.edges?.length || 0}</div>
                       <div className="text-xs text-muted-foreground">Conexões</div>
                     </div>
                     <div className="text-center p-3 bg-muted rounded-lg">
-                      <div className="text-2xl font-bold">{selectedFlow.version}</div>
-                      <div className="text-xs text-muted-foreground">Versão</div>
+                      <div className="text-2xl font-bold">{selectedFlowDefinition?.validation?.length || 0}</div>
+                      <div className="text-xs text-muted-foreground">Pendências</div>
                     </div>
                   </div>
                 </div>
@@ -228,7 +257,7 @@ function ChatbotFlowsPage() {
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold">Editor Visual</h3>
-                  {selectedFlow.status === "DRAFT" && (
+                  {selectedFlowMeta.status === "DRAFT" && (
                     <Button
                       size="sm"
                       variant={isEditing ? "default" : "outline"}
@@ -241,29 +270,49 @@ function ChatbotFlowsPage() {
                   )}
                 </div>
 
-                {isEditing ? (
+                {isLoadingDefinition ? (
+                  <div className="flex items-center justify-center p-12">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  </div>
+                ) : isEditing ? (
                   <div className="space-y-4">
                     <ChatbotFlowEditor
-                      key={`${selectedFlow.id}-edit`}
-                      definition={selectedFlow.definition}
+                      key={`${selectedFlowMeta.id}-edit`}
+                      definition={selectedFlowDefinition ?? undefined}
                       onChange={handleSaveEdits}
                       readOnly={false}
                     />
                   </div>
                 ) : (
                   <ChatbotFlowEditor
-                    key={`${selectedFlow.id}-view`}
-                    definition={selectedFlow.definition}
+                    key={`${selectedFlowMeta.id}-view`}
+                    definition={selectedFlowDefinition ?? undefined}
                     onChange={() => {}}
                     readOnly={true}
                   />
                 )}
+
+                {selectedFlowDefinition && selectedFlowDefinition.validation.length > 0 && (
+                  <div className="mt-4 p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-800 space-y-1.5">
+                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200 font-medium text-sm">
+                      <AlertTriangle className="w-4 h-4" />
+                      {selectedFlowDefinition.validation.length} pendência(s) — corrija antes de publicar
+                    </div>
+                    <ul className="text-xs text-amber-800 dark:text-amber-200 list-disc list-inside space-y-0.5">
+                      {selectedFlowDefinition.validation.map((v, i) => (
+                        <li key={i}>
+                          {v.nodeId ? <span className="font-mono">{v.nodeId}</span> : null} {v.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </Card>
 
               <div className="flex gap-2 pt-4">
-                {selectedFlow.status === "DRAFT" && (
+                {selectedFlowMeta.status === "DRAFT" && (
                   <Button
-                    onClick={() => handlePublish(selectedFlow.id)}
+                    onClick={() => handlePublish(selectedFlowMeta.id)}
                     disabled={publishFlow.isPending}
                     className="gap-2"
                   >
@@ -284,13 +333,13 @@ function ChatbotFlowsPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Deletar fluxo?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esta ação não pode ser desfeita. O fluxo "{selectedFlow.name}" será deletado permanentemente.
+                        Esta ação não pode ser desfeita. O fluxo "{selectedFlowMeta.name}" será deletado permanentemente.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => handleDelete(selectedFlow.id)}
+                        onClick={() => handleDelete(selectedFlowMeta.id)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Deletar
