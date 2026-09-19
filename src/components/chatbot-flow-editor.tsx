@@ -474,13 +474,21 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 const inputCls = "w-full text-sm border rounded px-2 py-1.5 bg-background";
 
 /** Painel de configuração específico por tipo de nó — abre ao clicar na engrenagem do nó. */
+const NO_MATCH_KEY = "__NO_MATCH__";
+
 function NodeConfigPanel({
   node,
+  allNodes,
+  optionTargets,
   onChangeConfig,
+  onSetOptionTarget,
   onClose,
 }: {
   node: Node<FlowNodeData>;
+  allNodes: { id: string; label: string }[];
+  optionTargets: Record<string, string>;
   onChangeConfig: (id: string, partial: Record<string, any>) => void;
+  onSetOptionTarget: (optionKey: string, targetNodeId: string) => void;
   onClose: () => void;
 }) {
   const type = node.data.nodeType;
@@ -561,14 +569,69 @@ function NodeConfigPanel({
         )}
 
         {type === "CHOICE" && (
-          <Field label="Opções" hint="Chave = valor que o usuário digita, Rótulo = texto exibido.">
-            <PairListEditor
-              pairs={mapToPairs(config.options)}
-              onChange={(pairs) => set({ options: pairsToMap(pairs) })}
-              keyPlaceholder="1"
-              valuePlaceholder="Consulta geral"
-            />
-          </Field>
+          <>
+            <Field label="Opções" hint="Chave = valor que o usuário digita, Rótulo = texto exibido.">
+              <PairListEditor
+                pairs={mapToPairs(config.options)}
+                onChange={(pairs) => set({ options: pairsToMap(pairs) })}
+                keyPlaceholder="1"
+                valuePlaceholder="Consulta geral"
+              />
+            </Field>
+
+            <Field
+              label="Para onde cada opção leva"
+              hint="Escolher um destino aqui cria (ou atualiza) automaticamente a conexão no canvas."
+            >
+              {Object.keys(config.options ?? {}).length === 0 ? (
+                <p className="text-[11px] text-muted-foreground">Adicione opções acima primeiro.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {Object.entries(config.options ?? {}).map(([key, label]) => (
+                    <div key={key} className="flex items-center gap-1.5">
+                      <span
+                        className="text-[11px] font-mono w-14 flex-shrink-0 truncate text-muted-foreground"
+                        title={String(label)}
+                      >
+                        {key}
+                      </span>
+                      <select
+                        value={optionTargets[key] ?? ""}
+                        onChange={(e) => onSetOptionTarget(key, e.target.value)}
+                        className={`${inputCls} flex-1`}
+                      >
+                        <option value="">— selecione o destino —</option>
+                        {allNodes
+                          .filter((n) => n.id !== node.id)
+                          .map((n) => (
+                            <option key={n.id} value={n.id}>
+                              {n.label}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Field>
+
+            <Field label="Se a resposta não bater com nenhuma opção">
+              <select
+                value={optionTargets[NO_MATCH_KEY] ?? ""}
+                onChange={(e) => onSetOptionTarget(NO_MATCH_KEY, e.target.value)}
+                className={inputCls}
+              >
+                <option value="">— sem tratamento (repete a pergunta) —</option>
+                {allNodes
+                  .filter((n) => n.id !== node.id)
+                  .map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {n.label}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+          </>
         )}
 
         {type === "WAIT" && (
@@ -769,6 +832,16 @@ function NodeConfigPanel({
   );
 }
 
+let pairRowSeq = 0;
+
+/**
+ * Mantém as linhas em estado local (com id próprio, independente da chave digitada).
+ * Necessário porque `onChange` grava um Record<string,string> — uma linha com chave
+ * vazia (ex.: recém-criada pelo "+ Adicionar") seria descartada nesse Record e, se a
+ * lista fosse só derivada da prop a cada render, a linha sumiria antes do usuário
+ * conseguir digitar a chave. Guardando localmente, a linha permanece visível até ter
+ * uma chave preenchida, quando passa a ser persistida para cima.
+ */
 function PairListEditor({
   pairs,
   onChange,
@@ -780,16 +853,23 @@ function PairListEditor({
   keyPlaceholder: string;
   valuePlaceholder: string;
 }) {
+  const [rows, setRows] = useState(() => pairs.map((p) => ({ ...p, id: `row-${pairRowSeq++}` })));
+
+  const emit = (next: { id: string; key: string; value: string }[]) => {
+    setRows(next);
+    onChange(next.map(({ key, value }) => ({ key, value })));
+  };
+
   return (
     <div className="space-y-1.5">
-      {pairs.map((p, idx) => (
-        <div key={idx} className="flex gap-1.5">
+      {rows.map((p, idx) => (
+        <div key={p.id} className="flex gap-1.5">
           <input
             value={p.key}
             onChange={(e) => {
-              const next = [...pairs];
+              const next = [...rows];
               next[idx] = { ...next[idx], key: e.target.value };
-              onChange(next);
+              emit(next);
             }}
             placeholder={keyPlaceholder}
             className={`${inputCls} flex-1`}
@@ -797,15 +877,15 @@ function PairListEditor({
           <input
             value={p.value}
             onChange={(e) => {
-              const next = [...pairs];
+              const next = [...rows];
               next[idx] = { ...next[idx], value: e.target.value };
-              onChange(next);
+              emit(next);
             }}
             placeholder={valuePlaceholder}
             className={`${inputCls} flex-1`}
           />
           <button
-            onClick={() => onChange(pairs.filter((_, i) => i !== idx))}
+            onClick={() => emit(rows.filter((_, i) => i !== idx))}
             className="p-1.5 text-destructive hover:bg-destructive/10 rounded"
           >
             <X className="w-3.5 h-3.5" />
@@ -813,7 +893,7 @@ function PairListEditor({
         </div>
       ))}
       <button
-        onClick={() => onChange([...pairs, { key: "", value: "" }])}
+        onClick={() => emit([...rows, { id: `row-${pairRowSeq++}`, key: "", value: "" }])}
         className="text-xs text-primary hover:underline"
       >
         + Adicionar
@@ -1073,6 +1153,56 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
     [screenToFlowPosition, handleContentChange, handleDeleteNode, handleSetRoot, handleOpenSettings, setNodes]
   );
 
+  /** Lê, a partir das edges atuais, para onde cada opção (ou o "não corresponde") de um nó CHOICE aponta hoje. */
+  const optionTargetsFor = useCallback(
+    (nodeId: string): Record<string, string> => {
+      const map: Record<string, string> = {};
+      edges.forEach((e) => {
+        if (e.source !== nodeId) return;
+        const condition = (e.data as any)?.condition as Record<string, any> | null | undefined;
+        if (condition?.trigger === "ON_OPTION" && typeof condition.value === "string") {
+          map[condition.value] = e.target;
+        } else if (condition?.trigger === "ON_NO_MATCH") {
+          map[NO_MATCH_KEY] = e.target;
+        }
+      });
+      return map;
+    },
+    [edges]
+  );
+
+  /** Cria/substitui a edge ON_OPTION (ou ON_NO_MATCH) de um nó CHOICE para o nó de destino escolhido no painel. */
+  const handleSetOptionTarget = useCallback(
+    (sourceId: string, optionKey: string, targetNodeId: string) => {
+      setEdges((eds) => {
+        const matchesOld = (e: Edge) => {
+          if (e.source !== sourceId) return false;
+          const condition = (e.data as any)?.condition as Record<string, any> | null | undefined;
+          if (optionKey === NO_MATCH_KEY) return condition?.trigger === "ON_NO_MATCH";
+          return condition?.trigger === "ON_OPTION" && condition?.value === optionKey;
+        };
+        const filtered = eds.filter((e) => !matchesOld(e));
+        if (!targetNodeId) return filtered;
+        const condition =
+          optionKey === NO_MATCH_KEY ? { trigger: "ON_NO_MATCH" } : { trigger: "ON_OPTION", value: optionKey };
+        const newEdge: Edge = {
+          id: `e-${sourceId}-${targetNodeId}-opt-${optionKey}-${Date.now()}`,
+          source: sourceId,
+          target: targetNodeId,
+          label: edgeAutoLabel(condition),
+          data: { condition },
+        };
+        return [...filtered, newEdge];
+      });
+    },
+    [setEdges]
+  );
+
+  const nodeOptionsForSelect = useMemo(
+    () => nodes.map((n) => ({ id: n.id, label: `${NODE_META[n.data.nodeType].label} · ${n.id}` })),
+    [nodes]
+  );
+
   const onEdgeClick = useCallback((_: unknown, edge: Edge) => {
     setIsAddPanelOpen(false);
     setSettingsNodeId(null);
@@ -1210,7 +1340,15 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
         )}
 
         {settingsNode && !readOnly && (
-          <NodeConfigPanel node={settingsNode} onChangeConfig={handleChangeConfig} onClose={() => setSettingsNodeId(null)} />
+          <NodeConfigPanel
+            key={settingsNode.id}
+            node={settingsNode}
+            allNodes={nodeOptionsForSelect}
+            optionTargets={optionTargetsFor(settingsNode.id)}
+            onChangeConfig={handleChangeConfig}
+            onSetOptionTarget={(key, target) => handleSetOptionTarget(settingsNode.id, key, target)}
+            onClose={() => setSettingsNodeId(null)}
+          />
         )}
 
         {selectedEdgeId && (
