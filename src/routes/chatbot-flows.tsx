@@ -17,13 +17,14 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Trash2, Send, CheckCircle2, Edit2, AlertTriangle, Archive } from "lucide-react";
+import { Loader2, Plus, Trash2, Send, CheckCircle2, Edit2, AlertTriangle, Archive, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   useChatbotFlows,
   useChatbotFlow,
   useCreateFlow,
   usePublishFlow,
+  useUnpublishFlow,
   useDeleteFlow,
   useArchiveFlow,
   useUpdateFlow,
@@ -53,6 +54,7 @@ function ChatbotFlowsPage() {
   const { data: selectedFlowDefinition, isLoading: isLoadingDefinition } = useChatbotFlow(selectedFlowId);
   const updateFlow = useUpdateFlow(selectedFlowId ?? "");
   const publishFlow = usePublishFlow();
+  const unpublishFlow = useUnpublishFlow();
   const deleteFlow = useDeleteFlow();
   const archiveFlow = useArchiveFlow();
 
@@ -101,6 +103,17 @@ function ChatbotFlowsPage() {
       },
       onError: (error) => {
         toast.error(errorMessage(error, "Não foi possível publicar o fluxo."));
+      },
+    });
+  };
+
+  const handleUnpublish = (flowId: string) => {
+    unpublishFlow.mutate(flowId, {
+      onSuccess: () => {
+        toast.success("Fluxo despublicado. Ele voltou para rascunho e pode ser editado.");
+      },
+      onError: (error) => {
+        toast.error(errorMessage(error, "Não foi possível despublicar o fluxo."));
       },
     });
   };
@@ -333,6 +346,39 @@ function ChatbotFlowsPage() {
                     <Send className="w-4 h-4" />
                     Publicar
                   </Button>
+                )}
+
+                {selectedFlowMeta.status === "PUBLISHED" && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" disabled={unpublishFlow.isPending} className="gap-2">
+                        {unpublishFlow.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                        <Undo2 className="w-4 h-4" />
+                        Despublicar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Despublicar fluxo?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          O fluxo "{selectedFlowMeta.name}" volta para rascunho e pode ser editado de novo.
+                          {selectedFlowMeta.isActive && (
+                            <>
+                              {" "}
+                              Ele é o fluxo <strong>ativo</strong> hoje — enquanto nenhum outro for publicado, as
+                              conversas do WhatsApp deixam de usar um fluxo customizado.
+                            </>
+                          )}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleUnpublish(selectedFlowMeta.id)}>
+                          Despublicar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
 
                 {selectedFlowMeta.status !== "ARCHIVED" && (

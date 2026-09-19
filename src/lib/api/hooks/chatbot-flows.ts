@@ -112,6 +112,22 @@ export function usePublishFlow() {
   });
 }
 
+// Unpublish flow — back to DRAFT, editable again; if it was the active flow, WhatsApp
+// conversations fall back to the default engine until another flow is published.
+export function useUnpublishFlow() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (flowId: string) => {
+      const response = await apiClient.post<ChatbotFlow>(`/v1/chatbot-flows/${flowId}/unpublish`);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chatbot-flows"] });
+    },
+  });
+}
+
 // Delete flow permanently — cannot be undone, the record is removed from the database.
 export function useDeleteFlow() {
   const queryClient = useQueryClient();
