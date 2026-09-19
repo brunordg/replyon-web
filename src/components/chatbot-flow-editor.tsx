@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect, useLayoutEffect } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -47,6 +47,8 @@ import {
   Bell,
   Calendar,
   Wrench,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 type NodeType = "MESSAGE" | "CHOICE" | "CONDITION" | "ACTION" | "WAIT" | "TRANSFER" | "CONDITION_ADVANCED" | "FEEDBACK" | "WEBHOOK" | "FORM" | "BROADCAST" | "NOTIFICATION" | "TEMPORAL" | "UTILITIES";
@@ -125,7 +127,7 @@ const ADD_NODE_CATEGORIES: { label: string; types: NodeType[] }[] = [
 
 const DEFAULT_CONFIG: Partial<Record<NodeType, Record<string, any>>> = {
   CHOICE: { options: { "1": "Opção 1", "2": "Opção 2" } },
-  WEBHOOK: { url: "", method: "POST", headers: {}, body: "", timeoutSeconds: 30, maxRetries: 0 },
+  WEBHOOK: { url: "", method: "POST", headers: {}, body: "", timeoutSeconds: 30, maxRetries: 0, postScript: "" },
   WAIT: { waitType: "interval", intervalSeconds: 60 },
   FORM: { fields: [{ name: "nome", type: "text", label: "Nome", required: true }], submitButtonLabel: "Enviar", persistToContact: true },
   FEEDBACK: { feedbackType: "RATING", minRating: 1, maxRating: 5, promptText: "" },
@@ -150,7 +152,7 @@ const HANDLE_SIDES: { id: string; position: Position }[] = [
   { id: "left", position: Position.Left },
 ];
 
-type TriggerType = "AUTO" | "ON_REPLY" | "ON_TIMEOUT" | "ON_OPTION" | "ON_NO_MATCH";
+type TriggerType = "AUTO" | "ON_REPLY" | "ON_TIMEOUT" | "ON_OPTION" | "ON_NO_MATCH" | "ON_SUCCESS" | "ON_ERROR";
 
 const TRIGGER_META: Record<TriggerType, { label: string; hint: string }> = {
   AUTO: { label: "Chamar próximo bloco", hint: "Avança sozinho, assim que o nó anterior termina — sem esperar nada." },
@@ -158,6 +160,8 @@ const TRIGGER_META: Record<TriggerType, { label: string; hint: string }> = {
   ON_TIMEOUT: { label: "Sem resposta em X segundos", hint: "Dispara sozinho se ninguém responder dentro do prazo — envia a mensagem seguinte proativamente." },
   ON_OPTION: { label: "Opção específica", hint: "Dispara quando a resposta do usuário for exatamente este valor (ex.: \"1\")." },
   ON_NO_MATCH: { label: "Nenhuma opção corresponde", hint: "Dispara quando a resposta não bate com nenhuma opção configurada." },
+  ON_SUCCESS: { label: "Webhook: sucesso", hint: "Dispara quando a chamada do webhook responder com status 2xx." },
+  ON_ERROR: { label: "Webhook: falha", hint: "Dispara quando a chamada do webhook falhar, der timeout ou responder com erro." },
 };
 
 function triggerTypeOf(condition: Record<string, any> | null | undefined): TriggerType {
@@ -197,11 +201,59 @@ interface FlowNodeData extends Record<string, unknown> {
   onDelete: (id: string) => void;
   onSetRoot: (id: string) => void;
   onOpenSettings: (id: string) => void;
+  onOptionLabelChange: (id: string, key: string, label: string) => void;
+  onAddOption: (id: string) => void;
+  onDeleteOption: (id: string, key: string) => void;
+}
+
+/** Uma linha do card com seu próprio ponto de conexão (opção do Choice, ou Sucesso/Falha do Webhook). */
+interface BranchRow {
+  handleId: string;
+  label: string;
+  color: string;
+  removable: boolean;
+  onLabelChange?: (label: string) => void;
+  onRemove?: () => void;
 }
 
 function FlowNodeCard({ id, data, selected }: NodeProps<Node<FlowNodeData>>) {
   const meta = NODE_META[data.nodeType];
   const Icon = meta.icon;
+  const isChoice = data.nodeType === "CHOICE";
+  const isWebhook = data.nodeType === "WEBHOOK";
+
+  const branchRows: BranchRow[] = isChoice
+    ? Object.entries(data.config?.options ?? {}).map(([key, label]) => ({
+        handleId: `opt-${key}`,
+        label: String(label),
+        color: meta.hex,
+        removable: true,
+        onLabelChange: (v: string) => data.onOptionLabelChange(id, key, v),
+        onRemove: () => data.onDeleteOption(id, key),
+      }))
+    : isWebhook
+      ? [
+          { handleId: "success", label: "Sucesso", color: "#22c55e", removable: false },
+          { handleId: "error", label: "Falha", color: "#ef4444", removable: false },
+        ]
+      : [];
+
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [rowTops, setRowTops] = useState<Record<string, number>>({});
+  const rowKeysSignature = branchRows.map((r) => r.handleId).join(",");
+
+  useLayoutEffect(() => {
+    if (branchRows.length === 0) return;
+    const next: Record<string, number> = {};
+    branchRows.forEach((row) => {
+      const el = rowRefs.current[row.handleId];
+      if (el) next[row.handleId] = el.offsetTop + el.offsetHeight / 2;
+    });
+    setRowTops(next);
+    // Recalcula quando o conjunto de linhas muda (adicionar/remover opção) — a altura de
+    // cada linha é fixa, então o texto digitado dentro dela não precisa disparar isso.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowKeysSignature, data.content]);
 
   return (
     <div
@@ -215,16 +267,31 @@ function FlowNodeCard({ id, data, selected }: NodeProps<Node<FlowNodeData>>) {
     >
       <div className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${meta.accent}`} />
 
-      {HANDLE_SIDES.map(({ id: handleId, position }) => (
+      {HANDLE_SIDES.filter(({ id: handleId }) => !(branchRows.length > 0 && handleId === "right")).map(
+        ({ id: handleId, position }) => (
+          <Handle
+            key={handleId}
+            id={handleId}
+            type="source"
+            position={position}
+            isConnectableStart
+            isConnectableEnd
+            style={{ background: meta.hex }}
+            className="!w-2.5 !h-2.5 !border-2 !border-background opacity-0 group-hover:opacity-100 !transition-opacity hover:!scale-150"
+          />
+        )
+      )}
+
+      {branchRows.map((row) => (
         <Handle
-          key={handleId}
-          id={handleId}
+          key={row.handleId}
+          id={row.handleId}
           type="source"
-          position={position}
+          position={Position.Right}
           isConnectableStart
-          isConnectableEnd
-          style={{ background: meta.hex }}
-          className="!w-2.5 !h-2.5 !border-2 !border-background opacity-0 group-hover:opacity-100 !transition-opacity hover:!scale-150"
+          isConnectableEnd={false}
+          style={{ top: rowTops[row.handleId] ?? 0, background: row.color }}
+          className="!w-2.5 !h-2.5 !border-2 !border-background opacity-80 hover:opacity-100 !transition-opacity hover:!scale-150"
         />
       ))}
 
@@ -275,6 +342,7 @@ function FlowNodeCard({ id, data, selected }: NodeProps<Node<FlowNodeData>>) {
 
       <div className="p-2.5">
         <div className="text-[10px] font-mono text-muted-foreground/70 mb-1">{id}</div>
+        {isChoice && <div className="text-[10px] font-medium text-muted-foreground mb-1">Mensagem</div>}
         {data.readOnly ? (
           <p className="text-xs whitespace-pre-wrap break-words">{data.content}</p>
         ) : (
@@ -284,6 +352,53 @@ function FlowNodeCard({ id, data, selected }: NodeProps<Node<FlowNodeData>>) {
             className="nodrag text-xs min-h-[54px] resize-none bg-background/80 border-black/10 dark:border-white/10"
             placeholder="Conteúdo do nó"
           />
+        )}
+
+        {isChoice && (
+          <div className="mt-2 space-y-1">
+            {branchRows.map((row) => (
+              <div key={row.handleId} ref={(el) => { rowRefs.current[row.handleId] = el; }} className="flex items-center gap-1">
+                {!data.readOnly && (
+                  <button
+                    title="Remover opção"
+                    onClick={row.onRemove}
+                    className="p-1 rounded hover:bg-destructive/20 text-destructive flex-shrink-0"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+                {data.readOnly ? (
+                  <span className="flex-1 text-xs border rounded px-2 py-1 bg-background/60 truncate">{row.label}</span>
+                ) : (
+                  <input
+                    value={row.label}
+                    onChange={(e) => row.onLabelChange?.(e.target.value)}
+                    className="nodrag flex-1 text-xs border rounded px-2 py-1 bg-background/80 border-black/10 dark:border-white/10"
+                  />
+                )}
+              </div>
+            ))}
+            {!data.readOnly && (
+              <button onClick={() => data.onAddOption(id)} className="text-[11px] text-primary hover:underline">
+                + Opção
+              </button>
+            )}
+          </div>
+        )}
+
+        {isWebhook && (
+          <div className="mt-2 space-y-1">
+            {branchRows.map((row) => (
+              <div key={row.handleId} ref={(el) => { rowRefs.current[row.handleId] = el; }} className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-black/10 dark:border-white/10 bg-background/60">
+                {row.handleId === "success" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5" style={{ color: row.color }} />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5" style={{ color: row.color }} />
+                )}
+                <span>{row.label}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -334,6 +449,9 @@ function toRFNodes(flowNodes: FlowNode[], rootNodeId: string): Node<FlowNodeData
         onDelete: () => {},
         onSetRoot: () => {},
         onOpenSettings: () => {},
+        onOptionLabelChange: () => {},
+        onAddOption: () => {},
+        onDeleteOption: () => {},
       },
     };
   });
@@ -344,6 +462,8 @@ function edgeAutoLabel(condition: Record<string, any> | null | undefined): strin
   if (trigger === "AUTO") return undefined;
   if (trigger === "ON_TIMEOUT") return `⏱ ${condition?.seconds ?? "?"}s sem resposta`;
   if (trigger === "ON_OPTION") return `🔢 opção "${condition?.value ?? "?"}"`;
+  if (trigger === "ON_SUCCESS") return "✅ sucesso";
+  if (trigger === "ON_ERROR") return "❌ falha";
   return TRIGGER_META[trigger].label;
 }
 
@@ -564,6 +684,27 @@ function NodeConfigPanel({
                   className={inputCls}
                 />
               </Field>
+            </div>
+
+            <Field
+              label="Mapeamento pós-execução"
+              hint={
+                'Uma linha por variável: nomeDaVariavel = json.caminho.no.campo — extrai valores da resposta ' +
+                'do webhook (quando ela é JSON) e deixa disponíveis como {{nomeDaVariavel}} nos nós seguintes. ' +
+                'Não é um script de código livre (por segurança) — só esse mapeamento simples.'
+              }
+            >
+              <Textarea
+                value={config.postScript ?? ""}
+                onChange={(e) => set({ postScript: e.target.value })}
+                className="font-mono text-xs min-h-[70px]"
+                placeholder={"pedidoId = json.id\nstatus = json.status"}
+              />
+            </Field>
+
+            <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+              Os caminhos <strong>Sucesso</strong> e <strong>Falha</strong> aparecem como conectores na lateral
+              direita do card, no canvas — arraste de cada um até o próximo nó.
             </div>
           </>
         )}
@@ -1095,6 +1236,54 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
     [setNodes]
   );
 
+  const handleOptionLabelChange = useCallback(
+    (id: string, key: string, label: string) => {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === id
+            ? { ...n, data: { ...n.data, config: { ...n.data.config, options: { ...(n.data.config?.options ?? {}), [key]: label } } } }
+            : n
+        )
+      );
+    },
+    [setNodes]
+  );
+
+  const handleAddOption = useCallback(
+    (id: string) => {
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== id) return n;
+          const options = n.data.config?.options ?? {};
+          const nextKey = String(Math.max(0, ...Object.keys(options).map((k) => parseInt(k, 10) || 0)) + 1);
+          return { ...n, data: { ...n.data, config: { ...n.data.config, options: { ...options, [nextKey]: `Opção ${nextKey}` } } } };
+        })
+      );
+    },
+    [setNodes]
+  );
+
+  const handleDeleteOption = useCallback(
+    (id: string, key: string) => {
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== id) return n;
+          const options = { ...(n.data.config?.options ?? {}) };
+          delete options[key];
+          return { ...n, data: { ...n.data, config: { ...n.data.config, options } } };
+        })
+      );
+      setEdges((eds) =>
+        eds.filter((e) => {
+          if (e.source !== id) return true;
+          const condition = (e.data as any)?.condition as Record<string, any> | null | undefined;
+          return !(condition?.trigger === "ON_OPTION" && condition?.value === key);
+        })
+      );
+    },
+    [setNodes, setEdges]
+  );
+
   const displayNodes = useMemo(
     () =>
       nodes.map((n) => ({
@@ -1107,16 +1296,44 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
           onDelete: handleDeleteNode,
           onSetRoot: handleSetRoot,
           onOpenSettings: handleOpenSettings,
+          onOptionLabelChange: handleOptionLabelChange,
+          onAddOption: handleAddOption,
+          onDeleteOption: handleDeleteOption,
         },
       })),
-    [nodes, rootNodeId, readOnly, handleContentChange, handleDeleteNode, handleSetRoot, handleOpenSettings]
+    [
+      nodes,
+      rootNodeId,
+      readOnly,
+      handleContentChange,
+      handleDeleteNode,
+      handleSetRoot,
+      handleOpenSettings,
+      handleOptionLabelChange,
+      handleAddOption,
+      handleDeleteOption,
+    ]
   );
 
+  /** Arrastar de um handle de opção do Choice ou de Sucesso/Falha do Webhook já cria a edge com o gatilho certo. */
   const onConnect = useCallback(
     (connection: Connection) => {
+      let condition: Record<string, any> | null = null;
+      if (connection.sourceHandle?.startsWith("opt-")) {
+        condition = { trigger: "ON_OPTION", value: connection.sourceHandle.slice(4) };
+      } else if (connection.sourceHandle === "success") {
+        condition = { trigger: "ON_SUCCESS" };
+      } else if (connection.sourceHandle === "error") {
+        condition = { trigger: "ON_ERROR" };
+      }
       setEdges((eds) =>
         addEdge(
-          { ...connection, id: `e-${connection.source}-${connection.target}-${Date.now()}`, data: { condition: null } },
+          {
+            ...connection,
+            id: `e-${connection.source}-${connection.target}-${Date.now()}`,
+            label: edgeAutoLabel(condition),
+            data: { condition },
+          },
           eds
         )
       );
@@ -1142,6 +1359,9 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
           onDelete: handleDeleteNode,
           onSetRoot: handleSetRoot,
           onOpenSettings: handleOpenSettings,
+          onOptionLabelChange: handleOptionLabelChange,
+          onAddOption: handleAddOption,
+          onDeleteOption: handleDeleteOption,
         },
       };
       setNodes((nds) => [...nds, newNode]);
@@ -1150,7 +1370,17 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
       setAddPanelSearch("");
       setSettingsNodeId(id);
     },
-    [screenToFlowPosition, handleContentChange, handleDeleteNode, handleSetRoot, handleOpenSettings, setNodes]
+    [
+      screenToFlowPosition,
+      handleContentChange,
+      handleDeleteNode,
+      handleSetRoot,
+      handleOpenSettings,
+      handleOptionLabelChange,
+      handleAddOption,
+      handleDeleteOption,
+      setNodes,
+    ]
   );
 
   /** Lê, a partir das edges atuais, para onde cada opção (ou o "não corresponde") de um nó CHOICE aponta hoje. */
