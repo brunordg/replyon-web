@@ -112,13 +112,28 @@ export function usePublishFlow() {
   });
 }
 
-// Delete flow (archive)
+// Delete flow permanently — cannot be undone, the record is removed from the database.
 export function useDeleteFlow() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (flowId: string) => {
       await apiClient.delete(`/v1/chatbot-flows/${flowId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chatbot-flows"] });
+    },
+  });
+}
+
+// Archive flow — reversible, the record stays in the database with status ARCHIVED.
+export function useArchiveFlow() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (flowId: string) => {
+      const response = await apiClient.post<ChatbotFlow>(`/v1/chatbot-flows/${flowId}/archive`);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chatbot-flows"] });

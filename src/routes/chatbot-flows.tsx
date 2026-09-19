@@ -17,7 +17,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Trash2, Send, CheckCircle2, Edit2, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, Trash2, Send, CheckCircle2, Edit2, AlertTriangle, Archive } from "lucide-react";
 import { toast } from "sonner";
 import {
   useChatbotFlows,
@@ -25,6 +25,7 @@ import {
   useCreateFlow,
   usePublishFlow,
   useDeleteFlow,
+  useArchiveFlow,
   useUpdateFlow,
 } from "@/lib/api/hooks/chatbot-flows";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,7 @@ function ChatbotFlowsPage() {
   const updateFlow = useUpdateFlow(selectedFlowId ?? "");
   const publishFlow = usePublishFlow();
   const deleteFlow = useDeleteFlow();
+  const archiveFlow = useArchiveFlow();
 
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -107,10 +109,21 @@ function ChatbotFlowsPage() {
     deleteFlow.mutate(flowId, {
       onSuccess: () => {
         setSelectedFlowId(null);
-        toast.success("Fluxo deletado.");
+        toast.success("Fluxo deletado permanentemente.");
       },
       onError: (error) => {
         toast.error(errorMessage(error, "Não foi possível deletar o fluxo."));
+      },
+    });
+  };
+
+  const handleArchive = (flowId: string) => {
+    archiveFlow.mutate(flowId, {
+      onSuccess: () => {
+        toast.success("Fluxo arquivado. Ele continua salvo e pode ser consultado depois.");
+      },
+      onError: (error) => {
+        toast.error(errorMessage(error, "Não foi possível arquivar o fluxo."));
       },
     });
   };
@@ -322,18 +335,48 @@ function ChatbotFlowsPage() {
                   </Button>
                 )}
 
+                {selectedFlowMeta.status !== "ARCHIVED" && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" disabled={archiveFlow.isPending} className="gap-2">
+                        {archiveFlow.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                        <Archive className="w-4 h-4" />
+                        Arquivar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Arquivar fluxo?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          O fluxo "{selectedFlowMeta.name}" continua salvo no banco, só deixa de aparecer como ativo/rascunho.
+                          Diferente de deletar, os dados não são perdidos.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleArchive(selectedFlowMeta.id)}>
+                          Arquivar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="gap-2">
+                    <Button variant="destructive" disabled={deleteFlow.isPending} className="gap-2">
+                      {deleteFlow.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                       <Trash2 className="w-4 h-4" />
                       Deletar
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Deletar fluxo?</AlertDialogTitle>
+                      <AlertDialogTitle>Deletar fluxo permanentemente?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esta ação não pode ser desfeita. O fluxo "{selectedFlowMeta.name}" será deletado permanentemente.
+                        Esta ação <strong>não pode ser desfeita</strong> — o fluxo "{selectedFlowMeta.name}" e toda a sua
+                        configuração de nós e conexões serão removidos do banco de dados para sempre. Se você só quer
+                        deixar de usá-lo por agora mas manter o histórico, use <strong>Arquivar</strong> em vez disso.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
