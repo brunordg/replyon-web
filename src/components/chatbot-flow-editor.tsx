@@ -17,6 +17,8 @@ import {
   type Connection,
   type NodeProps,
   type NodeTypes,
+  type NodeChange,
+  type EdgeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
@@ -1195,15 +1197,40 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
 
   const { screenToFlowPosition } = useReactFlow();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>(
+  const [nodes, setNodes, onNodesChangeInternal] = useNodesState<Node<FlowNodeData>>(
     toRFNodes(initialFlowNodes, initialRootId)
   );
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(toRFEdges(initialFlowEdges));
+  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState<Edge>(toRFEdges(initialFlowEdges));
   const [rootNodeId, setRootNodeId] = useState(initialRootId);
   const [settingsNodeId, setSettingsNodeId] = useState<string | null>(null);
   const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
   const [addPanelSearch, setAddPanelSearch] = useState("");
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+
+  // Apagar um nó pela tecla Delete/Backspace passa pelo onNodesChange nativo do React
+  // Flow, não pelo botão de lixeira (data.onDelete) — sem este wrapper, as edges ligadas
+  // ao nó apagado ficariam penduradas (source/target apontando pra um nó inexistente).
+  const onNodesChange = useCallback(
+    (changes: NodeChange<Node<FlowNodeData>>[]) => {
+      const removedIds = changes.filter((c): c is NodeChange<Node<FlowNodeData>> & { type: "remove" } => c.type === "remove").map((c) => c.id);
+      onNodesChangeInternal(changes);
+      if (removedIds.length === 0) return;
+      setEdges((eds) => eds.filter((e) => !removedIds.includes(e.source) && !removedIds.includes(e.target)));
+      setRootNodeId((cur) => (removedIds.includes(cur) ? "" : cur));
+      setSettingsNodeId((cur) => (cur && removedIds.includes(cur) ? null : cur));
+    },
+    [onNodesChangeInternal, setEdges]
+  );
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      const removedIds = changes.filter((c): c is EdgeChange & { type: "remove" } => c.type === "remove").map((c) => c.id);
+      onEdgesChangeInternal(changes);
+      if (removedIds.length === 0) return;
+      setSelectedEdgeId((cur) => (cur && removedIds.includes(cur) ? null : cur));
+    },
+    [onEdgesChangeInternal]
+  );
   const [edgeLabelDraft, setEdgeLabelDraft] = useState("");
   const [edgeTriggerDraft, setEdgeTriggerDraft] = useState<TriggerType>("AUTO");
   const [edgeSecondsDraft, setEdgeSecondsDraft] = useState("5");
@@ -1581,6 +1608,7 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}
           elementsSelectable={!readOnly}
+          deleteKeyCode={readOnly ? null : ["Backspace", "Delete"]}
           connectionMode={ConnectionMode.Loose}
           defaultEdgeOptions={{ style: { strokeWidth: 2 }, type: "smoothstep" }}
           fitView
