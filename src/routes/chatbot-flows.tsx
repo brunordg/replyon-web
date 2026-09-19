@@ -35,11 +35,11 @@ export const Route = createFileRoute("/chatbot-flows")({
 function ChatbotFlowsPage() {
   const { data: flows = [], isLoading, refetch } = useChatbotFlows();
   const createFlow = useCreateFlow();
-  const updateFlow = useUpdateFlow("");
+  const [selectedFlow, setSelectedFlow] = useState<any>(null);
+  const updateFlow = useUpdateFlow(selectedFlow?.id ?? "");
   const publishFlow = usePublishFlow();
   const deleteFlow = useDeleteFlow();
 
-  const [selectedFlow, setSelectedFlow] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
@@ -92,24 +92,31 @@ function ChatbotFlowsPage() {
     });
   };
 
-  const handleSaveEdits = (definition: any) => {
-    if (!selectedFlow) return;
-    updateFlow.mutate(
-      { definition },
-      {
-        onSuccess: () => {
-          setIsEditing(false);
-          refetch();
-        },
-      }
-    );
-  };
+  const handleSaveEdits = useCallback(
+    (definition: any) => {
+      if (!selectedFlow) return;
+      updateFlow.mutate(
+        { definition },
+        {
+          onSuccess: (data) => {
+            setSelectedFlow((prev: any) => ({
+              ...prev,
+              definition: { nodes: data.nodes, edges: data.edges, rootNodeId: data.rootNodeId },
+            }));
+            setIsEditing(false);
+            refetch();
+          },
+        }
+      );
+    },
+    [selectedFlow, updateFlow, refetch]
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Fluxos de Chatbot"
-        description="Crie e gerencie fluxos de conversa personalizados para sua empresa"
+        subtitle="Crie e gerencie fluxos de conversa personalizados para sua empresa"
       />
 
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
@@ -237,6 +244,7 @@ function ChatbotFlowsPage() {
                 {isEditing ? (
                   <div className="space-y-4">
                     <ChatbotFlowEditor
+                      key={`${selectedFlow.id}-edit`}
                       definition={selectedFlow.definition}
                       onChange={handleSaveEdits}
                       readOnly={false}
@@ -244,6 +252,7 @@ function ChatbotFlowsPage() {
                   </div>
                 ) : (
                   <ChatbotFlowEditor
+                    key={`${selectedFlow.id}-view`}
                     definition={selectedFlow.definition}
                     onChange={() => {}}
                     readOnly={true}

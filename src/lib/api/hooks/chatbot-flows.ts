@@ -72,13 +72,20 @@ export function useCreateFlow() {
   });
 }
 
-// Update flow (draft only)
+export interface FlowDefinitionDTO {
+  nodes: any[];
+  edges: any[];
+  rootNodeId: string;
+  validation: any[];
+}
+
+// Update flow (draft only) — returns the updated definition, not the flow metadata
 export function useUpdateFlow(flowId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: UpdateFlowDTO) => {
-      const response = await apiClient.put<ChatbotFlow>(`/v1/chatbot-flows/${flowId}`, data);
+      const response = await apiClient.put<FlowDefinitionDTO>(`/v1/chatbot-flows/${flowId}`, data);
       return response;
     },
     onSuccess: () => {
