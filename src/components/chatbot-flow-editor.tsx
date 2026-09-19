@@ -467,15 +467,41 @@ function edgeAutoLabel(condition: Record<string, any> | null | undefined): strin
   return TRIGGER_META[trigger].label;
 }
 
+/**
+ * Todo nó do canvas expõe vários handles nomeados (top/right/bottom/left, mais um por
+ * opção do Choice e Sucesso/Falha do Webhook) — nunca um handle único "padrão". O React
+ * Flow precisa do id exato de handle em cada edge para saber onde ela se conecta; sem
+ * isso, ao recarregar a página as conexões ficam ambíguas e desaparecem. Como o backend
+ * (FlowEdge.java) só tem os campos from/to/condition/label — qualquer campo extra no
+ * nível raiz do JSON seria silenciosamente descartado pelo Jackson — guardamos o id do
+ * handle dentro de `condition`, sob chaves reservadas, do mesmo jeito que a posição do
+ * nó já viaja dentro de `config.__position`.
+ */
+function extractHandleId(condition: Record<string, any> | null | undefined, key: "__sourceHandle" | "__targetHandle"): string | undefined {
+  const value = condition?.[key];
+  return typeof value === "string" && value ? value : undefined;
+}
+
+function stripHandleKeys(condition: Record<string, any> | null | undefined): Record<string, any> | null {
+  if (!condition) return null;
+  const { __sourceHandle, __targetHandle, ...rest } = condition;
+  return Object.keys(rest).length > 0 ? rest : null;
+}
+
 function toRFEdges(flowEdges: FlowEdge[]): Edge[] {
-  return flowEdges.map((e, i) => ({
-    id: `e-${e.from}-${e.to}-${i}`,
-    source: e.from,
-    target: e.to,
-    label: e.label ?? edgeAutoLabel(e.condition),
-    data: { condition: e.condition ?? null },
-    animated: false,
-  }));
+  return flowEdges.map((e, i) => {
+    const cleanCondition = stripHandleKeys(e.condition ?? null);
+    return {
+      id: `e-${e.from}-${e.to}-${i}`,
+      source: e.from,
+      target: e.to,
+      sourceHandle: extractHandleId(e.condition, "__sourceHandle"),
+      targetHandle: extractHandleId(e.condition, "__targetHandle"),
+      label: e.label ?? edgeAutoLabel(cleanCondition),
+      data: { condition: cleanCondition },
+      animated: false,
+    };
+  });
 }
 
 function generateId(existing: string[]) {
@@ -1415,10 +1441,14 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
         if (!targetNodeId) return filtered;
         const condition =
           optionKey === NO_MATCH_KEY ? { trigger: "ON_NO_MATCH" } : { trigger: "ON_OPTION", value: optionKey };
+        // Precisa do id exato do handle (mesmo padrão que os handles por opção do card
+        // usam) — sem isso a edge fica ambígua entre os vários conectores do nó Choice.
+        const sourceHandle = optionKey === NO_MATCH_KEY ? "bottom" : `opt-${optionKey}`;
         const newEdge: Edge = {
           id: `e-${sourceId}-${targetNodeId}-opt-${optionKey}-${Date.now()}`,
           source: sourceId,
           target: targetNodeId,
+          sourceHandle,
           label: edgeAutoLabel(condition),
           data: { condition },
         };
@@ -1484,12 +1514,18 @@ function FlowCanvas({ definition, onChange, readOnly = false }: ChatbotFlowEdito
       content: n.data.content,
       config: { ...n.data.config, __position: n.position },
     }));
-    const flowEdges: FlowEdge[] = edges.map((e) => ({
-      from: e.source,
-      to: e.target,
-      condition: (e.data as any)?.condition ?? null,
-      label: typeof e.label === "string" ? e.label : null,
-    }));
+    const flowEdges: FlowEdge[] = edges.map((e) => {
+      const baseCondition = (e.data as any)?.condition ?? null;
+      const withHandles: Record<string, any> = { ...(baseCondition ?? {}) };
+      if (e.sourceHandle) withHandles.__sourceHandle = e.sourceHandle;
+      if (e.targetHandle) withHandles.__targetHandle = e.targetHandle;
+      return {
+        from: e.source,
+        to: e.target,
+        condition: Object.keys(withHandles).length > 0 ? withHandles : null,
+        label: typeof e.label === "string" ? e.label : null,
+      };
+    });
     onChange({ nodes: flowNodes, edges: flowEdges, rootNodeId: rootNodeId || flowNodes[0]?.id || "" });
   }, [nodes, edges, rootNodeId, onChange]);
 
