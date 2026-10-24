@@ -1,26 +1,24 @@
 import type { ReactNode } from "react";
 
 export function PageHeader({
-  crumbs = [],
+  crumbs,
   title,
   subtitle,
   actions,
 }: {
-  crumbs?: string[];
+  crumbs: string[];
   title: string;
   subtitle?: string;
   actions?: ReactNode;
 }) {
   return (
     <>
-      {crumbs.length > 0 && (
-        <div className="mb-1.5 text-[11.5px] text-ry-ink-soft">
-          {crumbs.slice(0, -1).map((c, i) => (
-            <span key={i}>{c} / </span>
-          ))}
-          <b className="font-medium text-ry-blue-600">{crumbs[crumbs.length - 1]}</b>
-        </div>
-      )}
+      <div className="mb-1.5 text-[11.5px] text-ry-ink-soft">
+        {crumbs.slice(0, -1).map((c, i) => (
+          <span key={i}>{c} / </span>
+        ))}
+        <b className="font-medium text-ry-blue-600">{crumbs[crumbs.length - 1]}</b>
+      </div>
       <div className="mb-5 flex flex-wrap items-end gap-4">
         <div>
           <h1 className="font-display text-[26px] font-medium uppercase leading-none tracking-wider">

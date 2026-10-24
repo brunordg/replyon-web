@@ -11,7 +11,6 @@ import {
   Settings,
   LogOut,
   MessageCircle,
-  Zap,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { initials } from "@/lib/utils";
@@ -25,7 +24,6 @@ const menuMain = [
   { to: "/profissionais", label: "Profissionais", icon: UserCog },
   { to: "/servicos", label: "Serviços", icon: Scissors },
   { to: "/bloqueios", label: "Bloqueios", icon: Ban },
-  { to: "/chatbot-flows", label: "Fluxos de Bot", icon: Zap },
 ] as const;
 
 const menuManage = [
