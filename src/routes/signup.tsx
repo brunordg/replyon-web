@@ -290,20 +290,6 @@ function SignupPage() {
                       {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <div className="mt-2 flex gap-1">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "h-1 flex-1 rounded-full transition-colors",
-                          i < strength.score
-                            ? strength.color
-                            : "bg-border",
-                        )}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-1">{strength.label}</p>
                 </div>
 
                 <div className="space-y-1.5">
@@ -324,6 +310,20 @@ function SignupPage() {
                     />
                   </div>
                   {errors.confirm && <p className="text-[11px] text-danger">{errors.confirm}</p>}
+                  <div className="mt-2 flex gap-1">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "h-1 flex-1 rounded-full transition-colors",
+                          i < strength.score
+                            ? strength.color
+                            : "bg-border",
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">{strength.label}</p>
                 </div>
 
                 <div className="rounded-lg bg-[var(--ry-blue-50)] p-4 text-sm">
