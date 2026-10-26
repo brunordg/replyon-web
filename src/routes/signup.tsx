@@ -45,8 +45,9 @@ function SignupPage() {
   const [companyPhone, setCompanyPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ document?: string; phone?: string }>({});
+  const [errors, setErrors] = useState<{ document?: string; phone?: string; confirm?: string }>({});
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -56,13 +57,17 @@ function SignupPage() {
     e.preventDefault();
     if (step < 3) {
       if (step === 2) {
-        const nextErrors: { document?: string; phone?: string } = {};
+        const nextErrors: { document?: string; phone?: string; confirm?: string } = {};
         if (!isValidDocument(companyDocument)) nextErrors.document = "CNPJ ou CPF inválido.";
         if (!isValidPhone(companyPhone)) nextErrors.phone = "Telefone inválido.";
         setErrors(nextErrors);
         if (Object.keys(nextErrors).length > 0) return;
       }
       setStep((s) => s + 1);
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setErrors({ confirm: "As senhas não coincidem." });
       return;
     }
     setSubmitting(true);
@@ -268,7 +273,10 @@ function SignupPage() {
                       id="pw"
                       type={showPw ? "text" : "password"}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setErrors((prev) => ({ ...prev, confirm: undefined }));
+                      }}
                       placeholder="Mínimo 8 caracteres"
                       className="pl-9 pr-10 h-11"
                       required
@@ -296,6 +304,26 @@ function SignupPage() {
                     ))}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1">{strength.label}</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="pw2">Confirme a senha</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="pw2"
+                      type={showPw ? "text" : "password"}
+                      value={passwordConfirm}
+                      onChange={(e) => {
+                        setPasswordConfirm(e.target.value);
+                        setErrors((prev) => ({ ...prev, confirm: undefined }));
+                      }}
+                      placeholder="Repita a senha"
+                      className="pl-9 h-11"
+                      required
+                    />
+                  </div>
+                  {errors.confirm && <p className="text-[11px] text-danger">{errors.confirm}</p>}
                 </div>
 
                 <div className="rounded-lg bg-[var(--ry-blue-50)] p-4 text-sm">
