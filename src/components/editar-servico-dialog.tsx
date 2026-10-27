@@ -48,6 +48,10 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
     parallelCapable && phasesExceedDuration(duration, activeMinutesBefore, waitMinutes);
   const phaseError = phasesTooLong ? PHASES_EXCEED_DURATION_MESSAGE : errors.phases;
 
+  function clearPhaseError() {
+    setErrors((prev) => ({ ...prev, phases: undefined }));
+  }
+
   useEffect(() => {
     if (open) {
       setName(service.name);
@@ -164,7 +168,10 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
                 step="1"
                 min="1"
                 value={duration}
-                onChange={(e) => setDuration(e.target.value)}
+                onChange={(e) => {
+                  setDuration(e.target.value);
+                  clearPhaseError();
+                }}
               />
               {errors.duration && <p className="text-[11px] text-danger">{errors.duration}</p>}
             </div>
@@ -180,7 +187,14 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
                   O serviço tem uma etapa em que o profissional fica livre para outro atendimento.
                 </p>
               </div>
-              <Switch id="edit-servico-encaixe" checked={parallelCapable} onCheckedChange={setParallelCapable} />
+              <Switch
+                id="edit-servico-encaixe"
+                checked={parallelCapable}
+                onCheckedChange={(checked) => {
+                  setParallelCapable(checked);
+                  clearPhaseError();
+                }}
+              />
             </div>
             {parallelCapable && (
               <div className="grid grid-cols-2 gap-3">
@@ -195,7 +209,10 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
                     placeholder="20"
                     value={activeMinutesBefore}
                     aria-invalid={phasesTooLong || undefined}
-                    onChange={(e) => setActiveMinutesBefore(e.target.value)}
+                    onChange={(e) => {
+                      setActiveMinutesBefore(e.target.value);
+                      clearPhaseError();
+                    }}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -209,7 +226,10 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
                     placeholder="40"
                     value={waitMinutes}
                     aria-invalid={phasesTooLong || undefined}
-                    onChange={(e) => setWaitMinutes(e.target.value)}
+                    onChange={(e) => {
+                      setWaitMinutes(e.target.value);
+                      clearPhaseError();
+                    }}
                   />
                 </div>
                 {phaseError && (

@@ -38,6 +38,10 @@ export function NovoServicoDialog() {
     parallelCapable && phasesExceedDuration(duration, activeMinutesBefore, waitMinutes);
   const phaseError = phasesTooLong ? PHASES_EXCEED_DURATION_MESSAGE : errors.phases;
 
+  function clearPhaseError() {
+    setErrors((prev) => ({ ...prev, phases: undefined }));
+  }
+
   function reset() {
     setName("");
     setDescription("");
@@ -163,7 +167,10 @@ export function NovoServicoDialog() {
                 min="1"
                 placeholder="30"
                 value={duration}
-                onChange={(e) => setDuration(e.target.value)}
+                onChange={(e) => {
+                  setDuration(e.target.value);
+                  clearPhaseError();
+                }}
               />
               {errors.duration && <p className="text-[11px] text-danger">{errors.duration}</p>}
             </div>
@@ -179,7 +186,14 @@ export function NovoServicoDialog() {
                   O serviço tem uma etapa em que o profissional fica livre para outro atendimento.
                 </p>
               </div>
-              <Switch id="servico-encaixe" checked={parallelCapable} onCheckedChange={setParallelCapable} />
+              <Switch
+                id="servico-encaixe"
+                checked={parallelCapable}
+                onCheckedChange={(checked) => {
+                  setParallelCapable(checked);
+                  clearPhaseError();
+                }}
+              />
             </div>
             {parallelCapable && (
               <div className="grid grid-cols-2 gap-3">
@@ -194,7 +208,10 @@ export function NovoServicoDialog() {
                     placeholder="20"
                     value={activeMinutesBefore}
                     aria-invalid={phasesTooLong || undefined}
-                    onChange={(e) => setActiveMinutesBefore(e.target.value)}
+                    onChange={(e) => {
+                      setActiveMinutesBefore(e.target.value);
+                      clearPhaseError();
+                    }}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -208,7 +225,10 @@ export function NovoServicoDialog() {
                     placeholder="40"
                     value={waitMinutes}
                     aria-invalid={phasesTooLong || undefined}
-                    onChange={(e) => setWaitMinutes(e.target.value)}
+                    onChange={(e) => {
+                      setWaitMinutes(e.target.value);
+                      clearPhaseError();
+                    }}
                   />
                 </div>
                 {phaseError && (
