@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Loader2 } from "lucide-react";
 import { useCreateService } from "@/lib/api/hooks/services";
 import { parsePrice } from "@/lib/utils";
+import { PHASES_EXCEED_DURATION_MESSAGE, phasesExceedDuration } from "@/lib/service-phases";
 
 export function NovoServicoDialog() {
   const [open, setOpen] = useState(false);
@@ -33,6 +34,9 @@ export function NovoServicoDialog() {
     phases?: string;
   }>({});
   const createService = useCreateService();
+  const phasesTooLong =
+    parallelCapable && phasesExceedDuration(duration, activeMinutesBefore, waitMinutes);
+  const phaseError = errors.phases ?? (phasesTooLong ? PHASES_EXCEED_DURATION_MESSAGE : undefined);
 
   function reset() {
     setName("");
@@ -69,8 +73,8 @@ export function NovoServicoDialog() {
         nextErrors.phases = "Informe os tempos de fase (mínimo 1 minuto cada).";
       } else if (!waitMinutes.trim() || !Number.isInteger(waitNum) || waitNum < 1) {
         nextErrors.phases = "Informe os tempos de fase (mínimo 1 minuto cada).";
-      } else if (Number.isInteger(durationNum) && activeBeforeNum + waitNum > durationNum) {
-        nextErrors.phases = "A soma das fases não pode passar da duração total.";
+      } else if (phasesExceedDuration(duration, activeMinutesBefore, waitMinutes)) {
+        nextErrors.phases = PHASES_EXCEED_DURATION_MESSAGE;
       }
     }
 
@@ -189,6 +193,7 @@ export function NovoServicoDialog() {
                     min="1"
                     placeholder="20"
                     value={activeMinutesBefore}
+                    aria-invalid={phasesTooLong || undefined}
                     onChange={(e) => setActiveMinutesBefore(e.target.value)}
                   />
                 </div>
@@ -202,11 +207,14 @@ export function NovoServicoDialog() {
                     min="1"
                     placeholder="40"
                     value={waitMinutes}
+                    aria-invalid={phasesTooLong || undefined}
                     onChange={(e) => setWaitMinutes(e.target.value)}
                   />
                 </div>
-                {errors.phases && (
-                  <p className="col-span-2 text-[11px] text-danger">{errors.phases}</p>
+                {phaseError && (
+                  <p role="alert" className="col-span-2 text-[11px] text-danger">
+                    {phaseError}
+                  </p>
                 )}
               </div>
             )}
@@ -223,7 +231,7 @@ export function NovoServicoDialog() {
             </Button>
             <Button
               type="submit"
-              disabled={createService.isPending}
+              disabled={createService.isPending || phasesTooLong}
               className="rounded-[10px] bg-ry-blue-600 hover:bg-ry-blue-700"
             >
               {createService.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
