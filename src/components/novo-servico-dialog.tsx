@@ -36,7 +36,7 @@ export function NovoServicoDialog() {
   const createService = useCreateService();
   const phasesTooLong =
     parallelCapable && phasesExceedDuration(duration, activeMinutesBefore, waitMinutes);
-  const phaseError = errors.phases ?? (phasesTooLong ? PHASES_EXCEED_DURATION_MESSAGE : undefined);
+  const phaseError = phasesTooLong ? PHASES_EXCEED_DURATION_MESSAGE : errors.phases;
 
   function reset() {
     setName("");

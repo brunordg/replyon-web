@@ -46,7 +46,7 @@ export function EditarServicoDialog({ service }: { service: ServiceResponse }) {
   const updateService = useUpdateService();
   const phasesTooLong =
     parallelCapable && phasesExceedDuration(duration, activeMinutesBefore, waitMinutes);
-  const phaseError = errors.phases ?? (phasesTooLong ? PHASES_EXCEED_DURATION_MESSAGE : undefined);
+  const phaseError = phasesTooLong ? PHASES_EXCEED_DURATION_MESSAGE : errors.phases;
 
   useEffect(() => {
     if (open) {
