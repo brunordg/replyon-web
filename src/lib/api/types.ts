@@ -486,6 +486,13 @@ export interface NotificationResponse {
   createdAt: string;
 }
 
+export type NotificationSettingType = "APPOINTMENT_REMINDER" | "APPOINTMENT_CONFIRMATION_REQUEST";
+
+export interface NotificationSettingResponse {
+  type: string;
+  enabled: boolean;
+}
+
 /** Uma conversa do WhatsApp atualmente aguardando/em handoff humano. */
 export interface HandoffConversationResponse {
   phone: string;

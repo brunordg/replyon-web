@@ -27,6 +27,11 @@ import {
   useWhatsAppStatus,
 } from "@/lib/api/hooks/whatsapp";
 import { WHATSAPP_STATUS_LABEL, WHATSAPP_STATUS_STYLE } from "@/lib/api/status";
+import {
+  useNotificationSettings,
+  useUpdateNotificationSetting,
+} from "@/lib/api/hooks/notification-settings";
+import type { NotificationSettingType } from "@/lib/api/types";
 import { maskDocument, maskPhone } from "@/lib/masks";
 import { isValidPhone } from "@/lib/validators";
 
@@ -48,6 +53,23 @@ const SECTIONS = [
   { id: "seguranca", label: "Segurança", icon: Lock },
 ];
 
+const NOTIFICATION_ITEMS: {
+  type: NotificationSettingType;
+  title: string;
+  description: string;
+}[] = [
+  {
+    type: "APPOINTMENT_CONFIRMATION_REQUEST",
+    title: "Confirmação por WhatsApp",
+    description: "Pergunta ao cliente, 24h antes, se ele confirma presença",
+  },
+  {
+    type: "APPOINTMENT_REMINDER",
+    title: "Lembrete por WhatsApp",
+    description: "Envia um lembrete 2h antes do horário",
+  },
+];
+
 function ConfigPage() {
   const { data: company, isLoading } = useMyCompany();
   const updateCompany = useUpdateCompany();
@@ -55,6 +77,9 @@ function ConfigPage() {
   const connectWhatsApp = useConnectWhatsApp(company?.id);
   const disconnectWhatsApp = useDisconnectWhatsApp(company?.id);
   const requestPairingCode = useRequestPairingCode(company?.id);
+  const { data: notificationSettings, isLoading: notificationSettingsLoading } =
+    useNotificationSettings();
+  const updateNotificationSetting = useUpdateNotificationSetting();
 
   const [whatsappTab, setWhatsappTab] = useState<"qr" | "code">("qr");
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -284,27 +309,28 @@ function ConfigPage() {
               </p>
             </div>
             <div className="space-y-3">
-              {[
-                ["Confirmação por WhatsApp", "Envia mensagem 24h antes do horário", true],
-                ["Lembrete por e-mail", "Envia lembrete 2h antes", true],
-                ["Alerta de cancelamento", "Aviso imediato no painel", true],
-                ["Resumo diário", "Enviado às 20h com o dia seguinte", false],
-              ].map((r) => {
-                const [t, s, v] = r as [string, string, boolean];
-                return (
-                  <div
-                    key={t}
-                    className="flex items-center gap-4 border-b border-ry-line pb-3 last:border-0 last:pb-0"
-                  >
-                    <div className="flex-1">
-                      <b className="block text-[12.5px] font-medium">{t}</b>
-                      <span className="text-[11px] text-ry-ink-soft">{s}</span>
-                    </div>
-                    <Switch defaultChecked={v} />
+              {NOTIFICATION_ITEMS.map(({ type, title, description }) => (
+                <div
+                  key={type}
+                  className="flex items-center gap-4 border-b border-ry-line pb-3 last:border-0 last:pb-0"
+                >
+                  <div className="flex-1">
+                    <b className="block text-[12.5px] font-medium">{title}</b>
+                    <span className="text-[11px] text-ry-ink-soft">{description}</span>
                   </div>
-                );
-              })}
+                  <Switch
+                    checked={notificationSettings?.find((n) => n.type === type)?.enabled ?? false}
+                    onCheckedChange={(enabled) =>
+                      updateNotificationSetting.mutate({ type, enabled })
+                    }
+                    disabled={notificationSettingsLoading || updateNotificationSetting.isPending}
+                  />
+                </div>
+              ))}
             </div>
+            <p className="mt-4 text-[11.5px] text-ry-ink-soft">
+              As mensagens são enviadas pelo WhatsApp conectado abaixo.
+            </p>
           </Card>
 
           <Card id="whatsapp" className="rounded-[14px] border-ry-line p-6">
